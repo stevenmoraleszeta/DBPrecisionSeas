@@ -3,9 +3,6 @@
 -- =========================================
 CREATE DATABASE db_precision_seas;
 
--- Conectarse (psql)
-\c db_precision_seas;
-
 -- =========================================
 -- EMPRESA
 -- =========================================
@@ -186,3 +183,6 @@ CREATE TABLE cotizacion_proceso (
 
 CREATE INDEX idx_cotizacion_proceso_proceso
     ON cotizacion_proceso (id_proceso);
+
+
+

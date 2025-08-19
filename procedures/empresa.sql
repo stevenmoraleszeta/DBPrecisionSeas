@@ -1,0 +1,41 @@
+-- UPSERT
+CREATE OR REPLACE FUNCTION sp_upsert_empresa(
+  p_cod_empresa VARCHAR, p_nombre VARCHAR, p_direccion TEXT, p_telefono VARCHAR,
+  p_email_factura VARCHAR, p_cedula VARCHAR, p_observaciones TEXT
+) RETURNS VOID AS $$
+BEGIN
+  INSERT INTO empresa (cod_empresa, nombre_empresa, direccion, telefono, email_factura, cedula, observaciones)
+  VALUES (p_cod_empresa, p_nombre, p_direccion, p_telefono, p_email_factura, p_cedula, p_observaciones)
+  ON CONFLICT (cod_empresa) DO UPDATE
+  SET nombre_empresa = EXCLUDED.nombre_empresa,
+      direccion      = EXCLUDED.direccion,
+      telefono       = EXCLUDED.telefono,
+      email_factura  = EXCLUDED.email_factura,
+      cedula         = EXCLUDED.cedula,
+      observaciones  = EXCLUDED.observaciones;
+END; $$ LANGUAGE plpgsql;
+
+-- READ (uno)
+CREATE OR REPLACE FUNCTION get_empresa(p_cod_empresa VARCHAR)
+RETURNS empresa AS $$
+  SELECT * FROM empresa WHERE cod_empresa = p_cod_empresa;
+$$ LANGUAGE sql STABLE;
+
+-- READ (lista)
+CREATE OR REPLACE FUNCTION list_empresas(
+  p_search TEXT DEFAULT NULL, p_limit INT DEFAULT 50, p_offset INT DEFAULT 0
+) RETURNS SETOF empresa AS $$
+  SELECT *
+  FROM empresa
+  WHERE p_search IS NULL
+     OR (cod_empresa ILIKE '%'||p_search||'%' OR nombre_empresa ILIKE '%'||p_search||'%')
+  ORDER BY nombre_empresa NULLS LAST, cod_empresa
+  LIMIT p_limit OFFSET p_offset;
+$$ LANGUAGE sql STABLE;
+
+-- DELETE
+CREATE OR REPLACE FUNCTION sp_delete_empresa(p_cod_empresa VARCHAR)
+RETURNS VOID AS $$
+BEGIN
+  DELETE FROM empresa WHERE cod_empresa = p_cod_empresa;
+END; $$ LANGUAGE plpgsql;
