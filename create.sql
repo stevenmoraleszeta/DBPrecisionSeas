@@ -7,7 +7,8 @@ CREATE DATABASE db_precision_seas;
 -- EMPRESA
 -- =========================================
 CREATE TABLE empresa (
-    cod_empresa      VARCHAR(20) PRIMARY KEY,
+    id_empresa       SERIAL PRIMARY KEY,
+    cod_empresa      VARCHAR(20) UNIQUE NOT NULL,
     nombre_empresa   VARCHAR(200),
     direccion        TEXT,
     telefono         VARCHAR(50),
@@ -21,27 +22,30 @@ CREATE TABLE empresa (
 -- =========================================
 CREATE TABLE contacto (
     id_contacto      SERIAL PRIMARY KEY,
-    cod_empresa      VARCHAR(20),
+    id_empresa       INT,
     nombre_contacto  VARCHAR(150),
     telefono         VARCHAR(50),
     email            VARCHAR(150),
     puesto           VARCHAR(150),
     notas            TEXT,
 
-    -- Foráneas
     CONSTRAINT fk_contacto_empresa
-        FOREIGN KEY (cod_empresa)
-        REFERENCES empresa(cod_empresa)
+        FOREIGN KEY (id_empresa)
+        REFERENCES empresa(id_empresa)
         ON UPDATE CASCADE
         ON DELETE SET NULL
 );
+
+CREATE INDEX idx_contacto_id_empresa ON contacto (id_empresa);
 
 -- =========================================
 -- COTIZACION (cabezal)
 -- =========================================
 CREATE TABLE cotizacion (
-    num_cotizacion   VARCHAR(30) PRIMARY KEY,
-    cod_empresa      VARCHAR(20),
+    id_cotizacion    SERIAL PRIMARY KEY,
+    num_cotizacion   VARCHAR(30) UNIQUE NOT NULL,
+    -- Usar id_empresa como FK (nullable por el ON DELETE SET NULL)
+    id_empresa       INT,
     id_contacto      INT,
     direccion        TEXT,
     telefono         VARCHAR(20),
@@ -58,10 +62,9 @@ CREATE TABLE cotizacion (
     observa_cliente  TEXT,
     observa_interna  TEXT,
 
-    -- Foráneas
     CONSTRAINT fk_cotizacion_empresa
-        FOREIGN KEY (cod_empresa)
-        REFERENCES empresa(cod_empresa)
+        FOREIGN KEY (id_empresa)
+        REFERENCES empresa(id_empresa)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
 
@@ -71,6 +74,9 @@ CREATE TABLE cotizacion (
         ON UPDATE CASCADE
         ON DELETE SET NULL
 );
+
+CREATE INDEX idx_cotizacion_id_empresa ON cotizacion (id_empresa);
+CREATE INDEX idx_cotizacion_id_contacto ON cotizacion (id_contacto);
 
 -- =========================================
 -- Catálogos: MATERIAL / IMPORTACION
@@ -104,19 +110,18 @@ CREATE TABLE proceso_maquina (
 
 -- COTIZACION <-> MATERIAL
 CREATE TABLE cotizacion_material (
-    num_cotizacion  VARCHAR(30) NOT NULL,
+    id_cotizacion   INT NOT NULL,
     id_material     INT NOT NULL,
     cantidad        INT DEFAULT 0,
     dimension       VARCHAR(100),
     precio          NUMERIC(12,2) DEFAULT 0,
     total           NUMERIC(12,2) DEFAULT 0,
 
-    CONSTRAINT pk_cot_mat PRIMARY KEY (num_cotizacion, id_material),
+    CONSTRAINT pk_cot_mat PRIMARY KEY (id_cotizacion, id_material),
 
-    -- Foráneas
     CONSTRAINT fk_cm_cotizacion
-        FOREIGN KEY (num_cotizacion)
-        REFERENCES cotizacion(num_cotizacion)
+        FOREIGN KEY (id_cotizacion)
+        REFERENCES cotizacion(id_cotizacion)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
 
@@ -132,19 +137,18 @@ CREATE INDEX idx_cotizacion_material_material
 
 -- COTIZACION <-> IMPORTACION
 CREATE TABLE cotizacion_importacion (
-    num_cotizacion  VARCHAR(30) NOT NULL,
+    id_cotizacion   INT NOT NULL,
     id_importacion  INT NOT NULL,
     cantidad        INT DEFAULT 0,
     dimension       VARCHAR(100),
     precio          NUMERIC(12,2) DEFAULT 0,
     total           NUMERIC(12,2) DEFAULT 0,
 
-    CONSTRAINT pk_cot_imp PRIMARY KEY (num_cotizacion, id_importacion),
+    CONSTRAINT pk_cot_imp PRIMARY KEY (id_cotizacion, id_importacion),
 
-    -- Foráneas
     CONSTRAINT fk_ci_cotizacion
-        FOREIGN KEY (num_cotizacion)
-        REFERENCES cotizacion(num_cotizacion)
+        FOREIGN KEY (id_cotizacion)
+        REFERENCES cotizacion(id_cotizacion)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
 
@@ -160,17 +164,16 @@ CREATE INDEX idx_cotizacion_importacion_importacion
 
 -- COTIZACION <-> PROCESO/MAQUINA
 CREATE TABLE cotizacion_proceso (
-    num_cotizacion  VARCHAR(30) NOT NULL,
+    id_cotizacion   INT NOT NULL,
     id_proceso      INT NOT NULL,
     tiempo          INT DEFAULT 0,
     total           NUMERIC(12,2) DEFAULT 0,
 
-    CONSTRAINT pk_cot_proceso PRIMARY KEY (num_cotizacion, id_proceso),
+    CONSTRAINT pk_cot_proceso PRIMARY KEY (id_cotizacion, id_proceso),
 
-    -- Foráneas
     CONSTRAINT fk_cp_cotizacion
-        FOREIGN KEY (num_cotizacion)
-        REFERENCES cotizacion(num_cotizacion)
+        FOREIGN KEY (id_cotizacion)
+        REFERENCES cotizacion(id_cotizacion)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
 
@@ -183,6 +186,3 @@ CREATE TABLE cotizacion_proceso (
 
 CREATE INDEX idx_cotizacion_proceso_proceso
     ON cotizacion_proceso (id_proceso);
-
-
-
