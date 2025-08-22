@@ -51,14 +51,75 @@ $$ LANGUAGE sql STABLE;
 CREATE OR REPLACE FUNCTION list_cotizaciones(
   p_id_empresa INT DEFAULT NULL, p_search TEXT DEFAULT NULL,
   p_limit INT DEFAULT 50, p_offset INT DEFAULT 0
-) RETURNS SETOF cotizacion AS $$
-  SELECT *
-  FROM cotizacion
-  WHERE (p_id_empresa IS NULL OR id_empresa = p_id_empresa)
-    AND (p_search IS NULL OR (num_cotizacion ILIKE '%'||p_search||'%' OR desc_servicio ILIKE '%'||p_search||'%'))
-  ORDER BY num_cotizacion DESC
+) RETURNS TABLE(
+  id_cotizacion INT,
+  num_cotizacion VARCHAR,
+  id_empresa INT,
+  id_contacto INT,
+  direccion TEXT,
+  telefono VARCHAR,
+  desc_servicio TEXT,
+  cantidad INT,
+  moneda VARCHAR,
+  validez_oferta VARCHAR,
+  tiempo_entrega VARCHAR,
+  forma_pago VARCHAR,
+  subtotal NUMERIC,
+  descuento NUMERIC,
+  iva NUMERIC,
+  total NUMERIC,
+  observa_cliente TEXT,
+  observa_interna TEXT,
+  empresa JSON,
+  contacto JSON
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    c.id_cotizacion,
+    c.num_cotizacion,
+    c.id_empresa,
+    c.id_contacto,
+    c.direccion,
+    c.telefono,
+    c.desc_servicio,
+    c.cantidad,
+    c.moneda,
+    c.validez_oferta,
+    c.tiempo_entrega,
+    c.forma_pago,
+    c.subtotal,
+    c.descuento,
+    c.iva,
+    c.total,
+    c.observa_cliente,
+    c.observa_interna,
+    CASE 
+      WHEN e.id_empresa IS NOT NULL THEN 
+        json_build_object(
+          'id_empresa', e.id_empresa,
+          'nombre_empresa', e.nombre_empresa,
+          'cod_empresa', e.cod_empresa
+        )
+      ELSE NULL
+    END as empresa,
+    CASE 
+      WHEN co.id_contacto IS NOT NULL THEN 
+        json_build_object(
+          'id_contacto', co.id_contacto,
+          'nombre_contacto', co.nombre_contacto,
+          'puesto', co.puesto
+        )
+      ELSE NULL
+    END as contacto
+  FROM cotizacion c
+  LEFT JOIN empresa e ON c.id_empresa = e.id_empresa
+  LEFT JOIN contacto co ON c.id_contacto = co.id_contacto
+  WHERE (p_id_empresa IS NULL OR c.id_empresa = p_id_empresa)
+    AND (p_search IS NULL OR (c.num_cotizacion ILIKE '%'||p_search||'%' OR c.desc_servicio ILIKE '%'||p_search||'%'))
+  ORDER BY c.num_cotizacion DESC
   LIMIT p_limit OFFSET p_offset;
-$$ LANGUAGE sql STABLE;
+END; $$ LANGUAGE plpgsql;
 
 -- DELETE (cabezal; detalles caen por ON DELETE CASCADE)
 CREATE OR REPLACE FUNCTION sp_delete_cotizacion(p_id_cotizacion INT)
