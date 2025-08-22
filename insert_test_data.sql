@@ -4,9 +4,9 @@
 
 -- Insertar empresas de prueba
 INSERT INTO empresa (cod_empresa, nombre_empresa, direccion, telefono, email_factura, cedula, observaciones) VALUES
-('EMP001', 'Marina del Sur S.A.', 'Av. Costanera 123, Valparaíso', '+56 32 123 4567', 'facturacion@marinadelsur.cl', '96.789.123-4', 'Cliente principal del puerto'),
-('EMP002', 'Astilleros del Pacífico', 'Calle del Mar 456, San Antonio', '+56 35 987 6543', 'admin@astilleros.cl', '78.456.789-1', 'Especialistas en reparación naval'),
-('EMP003', 'Pesquera Austral', 'Puerto Pesquero 789, Talcahuano', '+56 41 555 1234', 'contabilidad@pesqueraus.cl', '65.123.456-7', 'Flota pesquera comercial');
+('001', 'Marina del Sur S.A.', 'Av. Costanera 123, Valparaíso', '+56 32 123 4567', 'facturacion@marinadelsur.cl', '96.789.123-4', 'Cliente principal del puerto'),
+('002', 'Astilleros del Pacífico', 'Calle del Mar 456, San Antonio', '+56 35 987 6543', 'admin@astilleros.cl', '78.456.789-1', 'Especialistas en reparación naval'),
+('003', 'Pesquera Austral', 'Puerto Pesquero 789, Talcahuano', '+56 41 555 1234', 'contabilidad@pesqueraus.cl', '65.123.456-7', 'Flota pesquera comercial');
 
 -- Insertar contactos de prueba (usando id_empresa en lugar de cod_empresa)
 INSERT INTO contacto (id_empresa, nombre_contacto, telefono, email, puesto, notas) VALUES

@@ -19,6 +19,28 @@ BEGIN
   RETURN v_id_empresa;
 END; $$ LANGUAGE plpgsql;
 
+-- UPDATE (por ID)
+CREATE OR REPLACE FUNCTION sp_update_empresa(
+  p_id_empresa INT, p_cod_empresa VARCHAR, p_nombre VARCHAR, p_direccion TEXT, 
+  p_telefono VARCHAR, p_email_factura VARCHAR, p_cedula VARCHAR, p_observaciones TEXT
+) RETURNS VOID AS $$
+BEGIN
+  UPDATE empresa 
+  SET cod_empresa = p_cod_empresa,
+      nombre_empresa = p_nombre,
+      direccion = p_direccion,
+      telefono = p_telefono,
+      email_factura = p_email_factura,
+      cedula = p_cedula,
+      observaciones = p_observaciones
+  WHERE id_empresa = p_id_empresa;
+  
+  -- Verificar que se actualizó al menos una fila
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Empresa con ID % no encontrada', p_id_empresa;
+  END IF;
+END; $$ LANGUAGE plpgsql;
+
 -- READ (uno por cod_empresa)
 CREATE OR REPLACE FUNCTION get_empresa_by_cod(p_cod_empresa VARCHAR)
 RETURNS empresa AS $$
