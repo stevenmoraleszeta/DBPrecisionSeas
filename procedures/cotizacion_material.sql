@@ -15,19 +15,19 @@ BEGIN
       total = EXCLUDED.total;
 END; $$ LANGUAGE plpgsql;
 
--- DELETE (línea)
+-- DELETE (línea por ID único)
 CREATE OR REPLACE FUNCTION sp_remove_cotizacion_material(
-  p_id_cotizacion INT, p_id_material INT
+  p_id INT
 ) RETURNS VOID AS $$
 BEGIN
   DELETE FROM cotizacion_material
-  WHERE id_cotizacion = p_id_cotizacion AND id_material = p_id_material;
+  WHERE id = p_id;
 END; $$ LANGUAGE plpgsql;
 
 -- READ (lista por cotización)
 CREATE OR REPLACE FUNCTION get_cotizacion_materiales(p_id_cotizacion INT)
-RETURNS TABLE(id_material INT, descripcion TEXT, cantidad INT, dimension VARCHAR, precio NUMERIC, total NUMERIC) AS $$
-  SELECT cm.id_material, m.descripcion, cm.cantidad, cm.dimension, cm.precio, cm.total
+RETURNS TABLE(id INT, id_material INT, descripcion TEXT, cantidad INT, dimension VARCHAR, precio NUMERIC, total NUMERIC) AS $$
+  SELECT cm.id, cm.id_material, m.descripcion, cm.cantidad, cm.dimension, cm.precio, cm.total
   FROM cotizacion_material cm
   JOIN material m ON m.id_material = cm.id_material
   WHERE cm.id_cotizacion = p_id_cotizacion

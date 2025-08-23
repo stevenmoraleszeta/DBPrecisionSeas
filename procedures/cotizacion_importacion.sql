@@ -15,19 +15,19 @@ BEGIN
       total = EXCLUDED.total;
 END; $$ LANGUAGE plpgsql;
 
--- DELETE (línea)
+-- DELETE (línea por ID único)
 CREATE OR REPLACE FUNCTION sp_remove_cotizacion_importacion(
-  p_id_cotizacion INT, p_id_importacion INT
+  p_id INT
 ) RETURNS VOID AS $$
 BEGIN
   DELETE FROM cotizacion_importacion
-  WHERE id_cotizacion = p_id_cotizacion AND id_importacion = p_id_importacion;
+  WHERE id = p_id;
 END; $$ LANGUAGE plpgsql;
 
 -- READ (lista por cotización)
 CREATE OR REPLACE FUNCTION get_cotizacion_importaciones(p_id_cotizacion INT)
-RETURNS TABLE(id_importacion INT, descripcion TEXT, cantidad INT, dimension VARCHAR, precio NUMERIC, total NUMERIC) AS $$
-  SELECT ci.id_importacion, i.descripcion, ci.cantidad, ci.dimension, ci.precio, ci.total
+RETURNS TABLE(id INT, id_importacion INT, descripcion TEXT, cantidad INT, dimension VARCHAR, precio NUMERIC, total NUMERIC) AS $$
+  SELECT ci.id, ci.id_importacion, i.descripcion, ci.cantidad, ci.dimension, ci.precio, ci.total
   FROM cotizacion_importacion ci
   JOIN importacion i ON i.id_importacion = ci.id_importacion
   WHERE ci.id_cotizacion = p_id_cotizacion

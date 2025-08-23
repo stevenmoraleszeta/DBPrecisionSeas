@@ -390,6 +390,9 @@ DECLARE
   v_id_material INT;
   v_id_importacion INT;
   v_id_proceso INT;
+  v_id_cot_mat INT;
+  v_id_cot_imp INT;
+  v_id_cot_proc INT;
   v_cnt INT;
 BEGIN
   RAISE NOTICE '🧪 Probando ELIMINACIONES...';
@@ -402,10 +405,14 @@ BEGIN
   SELECT id_importacion INTO v_id_importacion FROM importacion WHERE descripcion LIKE '%TEST%' LIMIT 1;
   SELECT id_proceso INTO v_id_proceso FROM proceso_maquina WHERE descripcion LIKE '%TEST%' LIMIT 1;
   
-  -- Eliminar detalles de cotización
-  PERFORM sp_remove_cotizacion_material(v_id_cotizacion, v_id_material);
-  PERFORM sp_remove_cotizacion_importacion(v_id_cotizacion, v_id_importacion);
-  PERFORM sp_remove_cotizacion_proceso(v_id_cotizacion, v_id_proceso);
+  -- Eliminar detalles de cotización (necesitamos obtener los IDs de las tablas relacionales)
+  SELECT id INTO v_id_cot_mat FROM cotizacion_material WHERE id_cotizacion = v_id_cotizacion AND id_material = v_id_material LIMIT 1;
+  SELECT id INTO v_id_cot_imp FROM cotizacion_importacion WHERE id_cotizacion = v_id_cotizacion AND id_importacion = v_id_importacion LIMIT 1;
+  SELECT id INTO v_id_cot_proc FROM cotizacion_proceso WHERE id_cotizacion = v_id_cotizacion AND id_proceso = v_id_proceso LIMIT 1;
+  
+  PERFORM sp_remove_cotizacion_material(v_id_cot_mat);
+  PERFORM sp_remove_cotizacion_importacion(v_id_cot_imp);
+  PERFORM sp_remove_cotizacion_proceso(v_id_cot_proc);
   RAISE NOTICE '✅ Detalles de cotización eliminados correctamente';
   
   -- Eliminar cotización (detalles caen por CASCADE)
