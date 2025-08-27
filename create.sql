@@ -1,19 +1,3 @@
--- =========================================
--- Base de datos PrecisionSeasERP - VERSIÓN CORREGIDA
--- =========================================
--- CAMBIOS REALIZADOS:
--- ✅ Se agregó campo 'id SERIAL PRIMARY KEY' a todas las tablas relacionales
--- ✅ Se cambió CONSTRAINT PRIMARY KEY por CONSTRAINT UNIQUE para mantener integridad
--- ✅ Se mantuvieron todas las FOREIGN KEYS y restricciones de cascada
--- ✅ Se preservaron todos los índices existentes
---
--- BENEFICIOS:
--- - APIs REST funcionan correctamente con /api/entidad/:id
--- - Operaciones CRUD completas (Crear, Leer, Actualizar, Eliminar)
--- - Validación de parámetros funciona sin errores
--- - Consistencia con el patrón del resto del sistema
--- - Mantenimiento de integridad referencial
--- =========================================
 CREATE DATABASE db_precision_seas;
 
 -- =========================================
@@ -92,6 +76,49 @@ CREATE INDEX idx_cotizacion_id_empresa ON cotizacion (id_empresa);
 CREATE INDEX idx_cotizacion_id_contacto ON cotizacion (id_contacto);
 
 -- =========================================
+-- OT (Orden de Trabajo) - NUEVA SECCIÓN
+-- =========================================
+CREATE TABLE ot (
+    id_ot            SERIAL PRIMARY KEY,
+    num_ot           VARCHAR(30) UNIQUE NOT NULL,
+    id_cotizacion    INT,
+    po               VARCHAR(100),
+    id_empresa       INT,
+    id_contacto      INT,
+    descripcion      TEXT,
+    cantidad         INT DEFAULT 0,
+    id_colaborador   INT,
+    estado           VARCHAR(50) DEFAULT 'Pendiente',
+    fecha_inicio     DATE,
+    fecha_fin        DATE,
+    prioridad        VARCHAR(20) DEFAULT 'Normal',
+    observaciones    TEXT,
+
+    CONSTRAINT fk_ot_cotizacion
+        FOREIGN KEY (id_cotizacion)
+        REFERENCES cotizacion(id_cotizacion)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_ot_empresa
+        FOREIGN KEY (id_empresa)
+        REFERENCES empresa(id_empresa)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_ot_contacto
+        FOREIGN KEY (id_contacto)
+        REFERENCES contacto(id_contacto)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
+);
+
+CREATE INDEX idx_ot_id_cotizacion ON ot (id_cotizacion);
+CREATE INDEX idx_ot_id_empresa ON ot (id_empresa);
+CREATE INDEX idx_ot_id_contacto ON ot (id_contacto);
+CREATE INDEX idx_ot_id_colaborador ON ot (id_colaborador);
+
+-- =========================================
 -- Catálogos: MATERIAL / IMPORTACION
 -- =========================================
 CREATE TABLE material (
@@ -118,7 +145,7 @@ CREATE TABLE proceso_maquina (
 );
 
 -- =========================================
--- Detalles (Many-to-Many)
+-- Detalles (Many-to-Many) - COTIZACIONES
 -- =========================================
 
 -- COTIZACION <-> MATERIAL
@@ -207,28 +234,128 @@ CREATE INDEX idx_cotizacion_proceso_proceso
     ON cotizacion_proceso (id_proceso);
 
 -- =========================================
--- RESUMEN DE LA ESTRUCTURA CORREGIDA
+-- Detalles (Many-to-Many) - OT (Orden de Trabajo)
 -- =========================================
-/*
-✅ TODAS LAS TABLAS RELACIONALES AHORA TIENEN:
 
-1. Campo 'id SERIAL PRIMARY KEY' para operaciones CRUD individuales
-2. CONSTRAINT UNIQUE en las combinaciones originales para prevenir duplicados
-3. Todas las FOREIGN KEYS y restricciones de cascada intactas
-4. Todos los índices existentes preservados
+-- OT <-> MATERIAL
+CREATE TABLE ot_material (
+    id SERIAL PRIMARY KEY,
+    id_ot           INT NOT NULL,
+    id_material     INT NOT NULL,
+    cantidad        INT DEFAULT 0,
+    dimension       VARCHAR(100),
+    precio          NUMERIC(12,2) DEFAULT 0,
+    total           NUMERIC(12,2) DEFAULT 0,
 
-🚀 BENEFICIOS OBTENIDOS:
+    CONSTRAINT uk_ot_mat UNIQUE (id_ot, id_material),
 
-- APIs REST funcionan correctamente con /api/entidad/:id
-- Operaciones CRUD completas (Crear, Leer, Actualizar, Eliminar)
-- Validación de parámetros funciona sin errores
-- Consistencia con el patrón del resto del sistema
-- Mantenimiento de integridad referencial
+    CONSTRAINT fk_otm_ot
+        FOREIGN KEY (id_ot)
+        REFERENCES ot(id_ot)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
 
-📋 TABLAS CORREGIDAS:
-- cotizacion_material ✅
-- cotizacion_importacion ✅  
-- cotizacion_proceso ✅
+    CONSTRAINT fk_otm_material
+        FOREIGN KEY (id_material)
+        REFERENCES material(id_material)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
 
-🎯 La base de datos está lista para funcionar correctamente con todas las APIs!
-*/
+CREATE INDEX idx_ot_material_material ON ot_material (id_material);
+
+-- OT <-> IMPORTACION
+CREATE TABLE ot_importacion (
+    id SERIAL PRIMARY KEY,
+    id_ot           INT NOT NULL,
+    id_importacion  INT NOT NULL,
+    cantidad        INT DEFAULT 0,
+    dimension       VARCHAR(100),
+    precio          NUMERIC(12,2) DEFAULT 0,
+    total           NUMERIC(12,2) DEFAULT 0,
+
+    CONSTRAINT uk_ot_imp UNIQUE (id_ot, id_importacion),
+
+    CONSTRAINT fk_oti_ot
+        FOREIGN KEY (id_ot)
+        REFERENCES ot(id_ot)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_oti_importacion
+        FOREIGN KEY (id_importacion)
+        REFERENCES importacion(id_importacion)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ot_importacion_importacion ON ot_importacion (id_importacion);
+
+-- OT <-> PROCESO/MAQUINA
+CREATE TABLE ot_proceso (
+    id SERIAL PRIMARY KEY,
+    id_ot           INT NOT NULL,
+    id_proceso      INT NOT NULL,
+    tiempo          INT DEFAULT 0,
+    total           NUMERIC(12,2) DEFAULT 0,
+
+    CONSTRAINT uk_ot_proceso UNIQUE (id_ot, id_proceso),
+
+    CONSTRAINT fk_otp_ot
+        FOREIGN KEY (id_ot)
+        REFERENCES ot(id_ot)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_otp_proceso
+        FOREIGN KEY (id_proceso)
+        REFERENCES proceso_maquina(id_proceso)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ot_proceso_proceso ON ot_proceso (id_proceso);
+
+-- =========================================
+-- Tablas específicas de OT
+-- =========================================
+
+-- OT <-> PLANO/SOLID (para archivos futuros)
+CREATE TABLE ot_plano_solido (
+    id SERIAL PRIMARY KEY,
+    id_ot           INT NOT NULL,
+    nombre_archivo  VARCHAR(255),
+    tipo_archivo    VARCHAR(50),
+    ruta_archivo    TEXT,
+    fecha_subida    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    observaciones   TEXT,
+
+    CONSTRAINT fk_otps_ot
+        FOREIGN KEY (id_ot)
+        REFERENCES ot(id_ot)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ot_plano_solido_ot ON ot_plano_solido (id_ot);
+
+-- OT <-> REGISTRO TIEMPO (para colaboradores)
+CREATE TABLE ot_registro_tiempo (
+    id SERIAL PRIMARY KEY,
+    id_ot           INT NOT NULL,
+    id_colaborador  INT,
+    fecha_inicio    TIMESTAMP,
+    fecha_fin       TIMESTAMP,
+    tiempo_trabajado INT DEFAULT 0, -- en minutos
+    descripcion     TEXT,
+    estado          VARCHAR(50) DEFAULT 'En Progreso',
+
+    CONSTRAINT fk_otrt_ot
+        FOREIGN KEY (id_ot)
+        REFERENCES ot(id_ot)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ot_registro_tiempo_ot ON ot_registro_tiempo (id_ot);
+CREATE INDEX idx_ot_registro_tiempo_colaborador ON ot_registro_tiempo (id_colaborador);

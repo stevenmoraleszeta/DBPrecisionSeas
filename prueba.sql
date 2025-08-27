@@ -1,6 +1,6 @@
 -- =========================================
 -- PRUEBAS INTEGRALES DE TABLAS Y PROCEDIMIENTOS
--- (PostgreSQL) - ESTRUCTURA ACTUALIZADA
+-- (PostgreSQL) - ESTRUCTURA ACTUALIZADA CON OT
 -- =========================================
 -- Este archivo prueba todas las tablas y procedimientos almacenados
 -- para verificar que la nueva estructura funciona correctamente
@@ -11,6 +11,12 @@
 
 -- Limpiar datos de pruebas anteriores
 BEGIN;
+DELETE FROM ot_registro_tiempo      WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM ot_plano_solido         WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM ot_proceso              WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM ot_importacion          WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM ot_material             WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM ot                      WHERE num_ot LIKE 'OT-TEST-%';
 DELETE FROM cotizacion_proceso     WHERE id_cotizacion IN (SELECT id_cotizacion FROM cotizacion WHERE num_cotizacion LIKE 'COT-TEST-%');
 DELETE FROM cotizacion_importacion WHERE id_cotizacion IN (SELECT id_cotizacion FROM cotizacion WHERE num_cotizacion LIKE 'COT-TEST-%');
 DELETE FROM cotizacion_material    WHERE id_cotizacion IN (SELECT id_cotizacion FROM cotizacion WHERE num_cotizacion LIKE 'COT-TEST-%');
@@ -379,25 +385,211 @@ BEGIN
 END $$;
 
 -- =========================================
--- 6) PRUEBAS DE ELIMINACIÓN (Orden inverso)
+-- 6) PRUEBAS DE OT (Orden de Trabajo) - NUEVA SECCIÓN
 -- =========================================
 
 DO $$
 DECLARE
+  v_id_empresa INT;
+  v_id_contacto INT;
+  v_id_cotizacion INT;
+  v_id_ot INT;
+  v_ot ot;
+BEGIN
+  RAISE NOTICE '🧪 Probando OT (Orden de Trabajo)...';
+  
+  -- Obtener IDs necesarios
+  SELECT id_empresa INTO v_id_empresa FROM empresa WHERE cod_empresa = 'TEST001';
+  SELECT id_contacto INTO v_id_contacto FROM contacto WHERE email = 'contacto.actualizado@test.com';
+  SELECT id_cotizacion INTO v_id_cotizacion FROM cotizacion WHERE num_cotizacion = 'COT-TEST-001';
+  
+  -- CREATE OT
+  SELECT sp_create_ot(
+    'OT-TEST-001', v_id_cotizacion, 'PO-TEST-001', v_id_empresa, v_id_contacto,
+    'OT de prueba para validar funcionalidad', 1, 1, 'Pendiente',
+    '2024-01-15', '2024-02-15', 'Alta', 'OT de prueba'
+  ) INTO v_id_ot;
+  
+  IF v_id_ot IS NULL OR v_id_ot <= 0 THEN
+    RAISE EXCEPTION '❌ Fallo sp_create_ot';
+  END IF;
+  RAISE NOTICE '✅ OT creada con ID: %', v_id_ot;
+  
+  -- READ por ID
+  SELECT * INTO v_ot FROM get_ot(v_id_ot);
+  IF v_ot.id_ot != v_id_ot THEN
+    RAISE EXCEPTION '❌ Fallo get_ot por ID';
+  END IF;
+  RAISE NOTICE '✅ OT leída por ID correctamente';
+  
+  -- READ por número
+  SELECT * INTO v_ot FROM get_ot_by_num('OT-TEST-001');
+  IF v_ot.num_ot != 'OT-TEST-001' THEN
+    RAISE EXCEPTION '❌ Fallo get_ot_by_num';
+  END IF;
+  RAISE NOTICE '✅ OT leída por número correctamente';
+  
+  -- UPDATE
+  PERFORM sp_update_ot_info(
+    v_id_ot, v_id_cotizacion, 'PO-TEST-001-UPDATED', v_id_empresa, v_id_contacto,
+    'OT de prueba actualizada', 2, 1, 'En Progreso',
+    '2024-01-20', '2024-02-20', 'Media', 'OT de prueba actualizada'
+  );
+  SELECT * INTO v_ot FROM get_ot(v_id_ot);
+  IF v_ot.cantidad != 2 THEN
+    RAISE EXCEPTION '❌ Fallo sp_update_ot_info';
+  END IF;
+  RAISE NOTICE '✅ OT actualizada correctamente';
+  
+  -- LIST
+  IF NOT EXISTS (SELECT 1 FROM list_ots(v_id_empresa, NULL, NULL, NULL, 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_ots';
+  END IF;
+  RAISE NOTICE '✅ Lista de OTs funcionando';
+  
+  -- STATS
+  IF NOT EXISTS (SELECT 1 FROM get_ot_stats(v_id_empresa)) THEN
+    RAISE EXCEPTION '❌ Fallo get_ot_stats';
+  END IF;
+  RAISE NOTICE '✅ Estadísticas de OT funcionando';
+  
+  RAISE NOTICE '🎉 Pruebas de OT completadas exitosamente';
+END $$;
+
+-- =========================================
+-- 7) PRUEBAS DE DETALLES DE OT
+-- =========================================
+
+DO $$
+DECLARE
+  v_id_ot INT;
+  v_id_material INT;
+  v_id_importacion INT;
+  v_id_proceso INT;
+  v_id_ot_mat INT;
+  v_id_ot_imp INT;
+  v_id_ot_proc INT;
+BEGIN
+  RAISE NOTICE '🧪 Probando DETALLES DE OT...';
+  
+  -- Obtener IDs necesarios
+  SELECT id_ot INTO v_id_ot FROM ot WHERE num_ot = 'OT-TEST-001';
+  SELECT id_material INTO v_id_material FROM material WHERE descripcion LIKE '%TEST%' LIMIT 1;
+  SELECT id_importacion INTO v_id_importacion FROM importacion WHERE descripcion LIKE '%TEST%' LIMIT 1;
+  SELECT id_proceso INTO v_id_proceso FROM proceso_maquina WHERE descripcion LIKE '%TEST%' LIMIT 1;
+  
+  -- OT Material
+  SELECT sp_create_ot_material(v_id_ot, v_id_material, 10, '20x30cm', 75.00, 750.00) INTO v_id_ot_mat;
+  IF v_id_ot_mat IS NULL OR v_id_ot_mat <= 0 THEN
+    RAISE EXCEPTION '❌ Fallo sp_create_ot_material';
+  END IF;
+  RAISE NOTICE '✅ Material agregado a OT correctamente';
+  
+  -- OT Importación
+  SELECT sp_create_ot_importacion(v_id_ot, v_id_importacion, 3, 'Flete aéreo', 150.00, 450.00) INTO v_id_ot_imp;
+  IF v_id_ot_imp IS NULL OR v_id_ot_imp <= 0 THEN
+    RAISE EXCEPTION '❌ Fallo sp_create_ot_importacion';
+  END IF;
+  RAISE NOTICE '✅ Importación agregada a OT correctamente';
+  
+  -- OT Proceso
+  SELECT sp_create_ot_proceso(v_id_ot, v_id_proceso, 180, 5400.00) INTO v_id_ot_proc;
+  IF v_id_ot_proc IS NULL OR v_id_ot_proc <= 0 THEN
+    RAISE EXCEPTION '❌ Fallo sp_create_ot_proceso';
+  END IF;
+  RAISE NOTICE '✅ Proceso agregado a OT correctamente';
+  
+  -- Verificar listas de detalles
+  IF NOT EXISTS (SELECT 1 FROM list_ot_materials(v_id_ot, 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_ot_materials';
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM list_ot_importaciones(v_id_ot, 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_ot_importaciones';
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM list_ot_procesos(v_id_ot, 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_ot_procesos';
+  END IF;
+  
+  RAISE NOTICE '✅ Listas de detalles de OT funcionando correctamente';
+  
+  RAISE NOTICE '🎉 Pruebas de DETALLES DE OT completadas exitosamente';
+END $$;
+
+-- =========================================
+-- 8) PRUEBAS DE ARCHIVOS Y TIEMPO DE OT
+-- =========================================
+
+DO $$
+DECLARE
+  v_id_ot INT;
+  v_id_archivo INT;
+  v_id_tiempo INT;
+BEGIN
+  RAISE NOTICE '🧪 Probando ARCHIVOS Y TIEMPO DE OT...';
+  
+  -- Obtener ID de OT
+  SELECT id_ot INTO v_id_ot FROM ot WHERE num_ot = 'OT-TEST-001';
+  
+  -- OT Plano/Solid
+  SELECT sp_create_ot_plano_solido(
+    v_id_ot, 'plano_test.dwg', 'plano', '/archivos/test/', 'Plano de prueba'
+  ) INTO v_id_archivo;
+  
+  IF v_id_archivo IS NULL OR v_id_archivo <= 0 THEN
+    RAISE EXCEPTION '❌ Fallo sp_create_ot_plano_solido';
+  END IF;
+  RAISE NOTICE '✅ Archivo agregado a OT correctamente';
+  
+  -- OT Registro Tiempo
+  SELECT sp_create_ot_registro_tiempo(
+    v_id_ot, 1, '2024-01-15 08:00:00', '2024-01-15 12:00:00', 240, 'Trabajo de prueba', 'Completado'
+  ) INTO v_id_tiempo;
+  
+  IF v_id_tiempo IS NULL OR v_id_tiempo <= 0 THEN
+    RAISE EXCEPTION '❌ Fallo sp_create_ot_registro_tiempo';
+  END IF;
+  RAISE NOTICE '✅ Registro de tiempo agregado a OT correctamente';
+  
+  -- Verificar listas
+  IF NOT EXISTS (SELECT 1 FROM list_ot_planos_solidos(v_id_ot, 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_ot_planos_solidos';
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM list_ot_registros_tiempo(v_id_ot, 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_ot_registros_tiempo';
+  END IF;
+  
+  RAISE NOTICE '✅ Listas de archivos y tiempo funcionando correctamente';
+  
+  RAISE NOTICE '🎉 Pruebas de ARCHIVOS Y TIEMPO DE OT completadas exitosamente';
+END $$;
+
+-- =========================================
+-- 9) PRUEBAS DE ELIMINACIÓN (Orden inverso)
+-- =========================================
+
+DO $$
+DECLARE
+  v_id_ot INT;
   v_id_cotizacion INT;
   v_id_empresa INT;
   v_id_contacto INT;
   v_id_material INT;
   v_id_importacion INT;
   v_id_proceso INT;
-  v_id_cot_mat INT;
-  v_id_cot_imp INT;
-  v_id_cot_proc INT;
+  v_id_ot_mat INT;
+  v_id_ot_imp INT;
+  v_id_ot_proc INT;
+  v_id_archivo INT;
+  v_id_tiempo INT;
   v_cnt INT;
 BEGIN
   RAISE NOTICE '🧪 Probando ELIMINACIONES...';
   
   -- Obtener IDs para eliminar
+  SELECT id_ot INTO v_id_ot FROM ot WHERE num_ot = 'OT-TEST-001';
   SELECT id_cotizacion INTO v_id_cotizacion FROM cotizacion WHERE num_cotizacion = 'COT-TEST-001';
   SELECT id_empresa INTO v_id_empresa FROM empresa WHERE cod_empresa = 'TEST001';
   SELECT id_contacto INTO v_id_contacto FROM contacto WHERE email = 'contacto.actualizado@test.com';
@@ -405,14 +597,40 @@ BEGIN
   SELECT id_importacion INTO v_id_importacion FROM importacion WHERE descripcion LIKE '%TEST%' LIMIT 1;
   SELECT id_proceso INTO v_id_proceso FROM proceso_maquina WHERE descripcion LIKE '%TEST%' LIMIT 1;
   
-  -- Eliminar detalles de cotización (necesitamos obtener los IDs de las tablas relacionales)
-  SELECT id INTO v_id_cot_mat FROM cotizacion_material WHERE id_cotizacion = v_id_cotizacion AND id_material = v_id_material LIMIT 1;
-  SELECT id INTO v_id_cot_imp FROM cotizacion_importacion WHERE id_cotizacion = v_id_cotizacion AND id_importacion = v_id_importacion LIMIT 1;
-  SELECT id INTO v_id_cot_proc FROM cotizacion_proceso WHERE id_cotizacion = v_id_cotizacion AND id_proceso = v_id_proceso LIMIT 1;
+  -- Eliminar detalles de OT
+  SELECT id INTO v_id_ot_mat FROM ot_material WHERE id_ot = v_id_ot AND id_material = v_id_material LIMIT 1;
+  SELECT id INTO v_id_ot_imp FROM ot_importacion WHERE id_ot = v_id_ot AND id_importacion = v_id_importacion LIMIT 1;
+  SELECT id INTO v_id_ot_proc FROM ot_proceso WHERE id_ot = v_id_ot AND id_proceso = v_id_proceso LIMIT 1;
   
-  PERFORM sp_remove_cotizacion_material(v_id_cot_mat);
-  PERFORM sp_remove_cotizacion_importacion(v_id_cot_imp);
-  PERFORM sp_remove_cotizacion_proceso(v_id_cot_proc);
+  PERFORM sp_delete_ot_material(v_id_ot_mat);
+  PERFORM sp_delete_ot_importacion(v_id_ot_imp);
+  PERFORM sp_delete_ot_proceso(v_id_ot_proc);
+  RAISE NOTICE '✅ Detalles de OT eliminados correctamente';
+  
+  -- Eliminar archivo y tiempo de OT
+  SELECT id INTO v_id_archivo FROM ot_plano_solido WHERE id_ot = v_id_ot LIMIT 1;
+  SELECT id INTO v_id_tiempo FROM ot_registro_tiempo WHERE id_ot = v_id_ot LIMIT 1;
+  
+  PERFORM sp_delete_ot_plano_solido(v_id_archivo);
+  PERFORM sp_delete_ot_registro_tiempo(v_id_tiempo);
+  RAISE NOTICE '✅ Archivo y tiempo de OT eliminados correctamente';
+  
+  -- Eliminar OT (detalles caen por CASCADE)
+  PERFORM sp_delete_ot(v_id_ot);
+  SELECT COUNT(*) INTO v_cnt FROM ot WHERE id_ot = v_id_ot;
+  IF v_cnt != 0 THEN
+    RAISE EXCEPTION '❌ Fallo sp_delete_ot';
+  END IF;
+  RAISE NOTICE '✅ OT eliminada correctamente';
+  
+  -- Eliminar detalles de cotización (necesitamos obtener los IDs de las tablas relacionales)
+  SELECT id INTO v_id_ot_mat FROM cotizacion_material WHERE id_cotizacion = v_id_cotizacion AND id_material = v_id_material LIMIT 1;
+  SELECT id INTO v_id_ot_imp FROM cotizacion_importacion WHERE id_cotizacion = v_id_cotizacion AND id_importacion = v_id_importacion LIMIT 1;
+  SELECT id INTO v_id_ot_proc FROM cotizacion_proceso WHERE id_cotizacion = v_id_cotizacion AND id_proceso = v_id_proceso LIMIT 1;
+  
+  PERFORM sp_remove_cotizacion_material(v_id_ot_mat);
+  PERFORM sp_remove_cotizacion_importacion(v_id_ot_imp);
+  PERFORM sp_remove_cotizacion_proceso(v_id_ot_proc);
   RAISE NOTICE '✅ Detalles de cotización eliminados correctamente';
   
   -- Eliminar cotización (detalles caen por CASCADE)
@@ -459,7 +677,7 @@ BEGIN
   RAISE NOTICE '🎉 TODAS LAS PRUEBAS COMPLETADAS EXITOSAMENTE';
   RAISE NOTICE '🎉 =========================================';
   RAISE NOTICE '';
-  RAISE NOTICE '✅ Estructura de base de datos actualizada';
+  RAISE NOTICE '✅ Estructura de base de datos actualizada con OT';
   RAISE NOTICE '✅ Todas las tablas funcionando correctamente';
   RAISE NOTICE '✅ Todos los procedimientos almacenados funcionando';
   RAISE NOTICE '✅ Relaciones FK correctamente configuradas';
@@ -477,5 +695,9 @@ BEGIN
   RAISE NOTICE '   • Contacto (dependiente de empresa)';
   RAISE NOTICE '   • Cotización (dependiente de empresa y contacto)';
   RAISE NOTICE '   • Detalles de cotización (material, importación, proceso)';
+  RAISE NOTICE '   🆕 OT (Orden de Trabajo) - NUEVA SECCIÓN';
+  RAISE NOTICE '   🆕 Detalles de OT (material, importación, proceso)';
+  RAISE NOTICE '   🆕 Archivos de OT (planos, documentos)';
+  RAISE NOTICE '   🆕 Control de tiempo de OT (colaboradores)';
   RAISE NOTICE '';
 END $$;
