@@ -7,7 +7,7 @@
 -- CREATE (cabezal). Inicializa campos en valores por defecto
 CREATE OR REPLACE FUNCTION sp_create_ot(
   p_num_ot VARCHAR, p_id_cotizacion INT, p_po VARCHAR, p_id_empresa INT, 
-  p_id_contacto INT, p_descripcion TEXT, p_cantidad INT, p_id_colaborador INT,
+  p_id_contacto INT, p_descripcion TEXT, p_cantidad INT,
   p_estado VARCHAR, p_fecha_inicio DATE, p_fecha_fin DATE, p_prioridad VARCHAR,
   p_observaciones TEXT
 ) RETURNS INT AS $$
@@ -15,10 +15,10 @@ DECLARE v_id_ot INT;
 BEGIN
   INSERT INTO ot (
     num_ot, id_cotizacion, po, id_empresa, id_contacto, descripcion, cantidad,
-    id_colaborador, estado, fecha_inicio, fecha_fin, prioridad, observaciones
+    estado, fecha_inicio, fecha_fin, prioridad, observaciones
   ) VALUES (
     p_num_ot, p_id_cotizacion, p_po, p_id_empresa, p_id_contacto, p_descripcion,
-    COALESCE(p_cantidad,0), p_id_colaborador, COALESCE(p_estado,'Pendiente'),
+    COALESCE(p_cantidad,0), COALESCE(p_estado,'Pendiente'),
     p_fecha_inicio, p_fecha_fin, COALESCE(p_prioridad,'Normal'), p_observaciones
   ) RETURNING id_ot INTO v_id_ot;
   
@@ -28,7 +28,7 @@ END; $$ LANGUAGE plpgsql;
 -- UPDATE (cabezal, sin tocar campos calculados)
 CREATE OR REPLACE FUNCTION sp_update_ot_info(
   p_id_ot INT, p_id_cotizacion INT, p_po VARCHAR, p_id_empresa INT, 
-  p_id_contacto INT, p_descripcion TEXT, p_cantidad INT, p_id_colaborador INT,
+  p_id_contacto INT, p_descripcion TEXT, p_cantidad INT,
   p_estado VARCHAR, p_fecha_inicio DATE, p_fecha_fin DATE, p_prioridad VARCHAR,
   p_observaciones TEXT
 ) RETURNS VOID AS $$
@@ -36,7 +36,7 @@ BEGIN
   UPDATE ot
   SET id_cotizacion = p_id_cotizacion, po = p_po, id_empresa = p_id_empresa,
       id_contacto = p_id_contacto, descripcion = p_descripcion, 
-      cantidad = COALESCE(p_cantidad,0), id_colaborador = p_id_colaborador,
+      cantidad = COALESCE(p_cantidad,0),
       estado = COALESCE(p_estado,'Pendiente'), fecha_inicio = p_fecha_inicio,
       fecha_fin = p_fecha_fin, prioridad = COALESCE(p_prioridad,'Normal'),
       observaciones = p_observaciones
@@ -69,7 +69,7 @@ CREATE OR REPLACE FUNCTION list_ots(
   id_contacto INT,
   descripcion TEXT,
   cantidad INT,
-  id_colaborador INT,
+
   estado VARCHAR,
   fecha_inicio DATE,
   fecha_fin DATE,
@@ -90,7 +90,7 @@ BEGIN
     o.id_contacto,
     o.descripcion,
     o.cantidad,
-    o.id_colaborador,
+
     o.estado,
     o.fecha_inicio,
     o.fecha_fin,

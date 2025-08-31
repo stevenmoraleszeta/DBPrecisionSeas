@@ -11,12 +11,12 @@
 
 -- Limpiar datos de pruebas anteriores
 BEGIN;
-DELETE FROM ot_registro_tiempo      WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
-DELETE FROM ot_plano_solido         WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
-DELETE FROM ot_proceso              WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
-DELETE FROM ot_importacion          WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
-DELETE FROM ot_material             WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
-DELETE FROM ot                      WHERE num_ot LIKE 'OT-TEST-%';
+DELETE FROM registro_tiempo        WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM plano_solido           WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM ot_proceso             WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM ot_importacion         WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM ot_material            WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM ot                     WHERE num_ot LIKE 'OT-TEST-%';
 DELETE FROM cotizacion_proceso     WHERE id_cotizacion IN (SELECT id_cotizacion FROM cotizacion WHERE num_cotizacion LIKE 'COT-TEST-%');
 DELETE FROM cotizacion_importacion WHERE id_cotizacion IN (SELECT id_cotizacion FROM cotizacion WHERE num_cotizacion LIKE 'COT-TEST-%');
 DELETE FROM cotizacion_material    WHERE id_cotizacion IN (SELECT id_cotizacion FROM cotizacion WHERE num_cotizacion LIKE 'COT-TEST-%');
@@ -26,6 +26,7 @@ DELETE FROM material               WHERE descripcion LIKE '%TEST%';
 DELETE FROM importacion            WHERE descripcion LIKE '%TEST%';
 DELETE FROM proceso_maquina        WHERE descripcion LIKE '%TEST%';
 DELETE FROM empresa                WHERE cod_empresa LIKE 'TEST%';
+DELETE FROM usuario                WHERE email LIKE '%@test.com' OR email LIKE '%@empresa.com';
 COMMIT;
 
 -- =========================================
@@ -385,7 +386,88 @@ BEGIN
 END $$;
 
 -- =========================================
--- 6) PRUEBAS DE OT (Orden de Trabajo) - NUEVA SECCIÓN
+-- 6) PRUEBAS DE USUARIO (COLABORADORES)
+-- =========================================
+
+DO $$
+DECLARE
+  v_id_usuario INT;
+  v_usuario JSON;
+  v_usuarios JSON;
+BEGIN
+  RAISE NOTICE '🧪 Probando USUARIO (Colaboradores)...';
+  
+  -- CREATE usuario
+  SELECT sp_create_usuario(
+    'Usuario', 'TEST 001', 'usuario.test001@empresa.com',
+    '+56 9 9999 0001', 'Ingeniero TEST', 'Departamento TEST', 'Activo',
+    'Usuario de prueba para validar funcionalidad'
+  ) INTO v_usuario;
+  
+  IF v_usuario->>'success' != 'true' THEN
+    RAISE EXCEPTION '❌ Fallo sp_create_usuario: %', v_usuario->>'message';
+  END IF;
+  
+  v_id_usuario := (v_usuario->>'id_usuario')::INT;
+  RAISE NOTICE '✅ Usuario creado con ID: %', v_id_usuario;
+  
+  -- READ por ID
+  SELECT get_usuario(v_id_usuario) INTO v_usuario;
+  IF v_usuario->>'success' != 'true' THEN
+    RAISE EXCEPTION '❌ Fallo get_usuario por ID';
+  END IF;
+  RAISE NOTICE '✅ Usuario leído por ID correctamente';
+  
+  -- UPDATE usuario
+  SELECT sp_update_usuario(
+    v_id_usuario, 'Usuario', 'TEST 001 Actualizado',
+    'usuario.actualizado@empresa.com', '+56 9 9999 0002',
+    'Ingeniero TEST Actualizado', 'Departamento TEST Actualizado', 'Activo',
+    'Usuario de prueba actualizado'
+  ) INTO v_usuario;
+  
+  IF v_usuario->>'success' != 'true' THEN
+    RAISE EXCEPTION '❌ Fallo sp_update_usuario';
+  END IF;
+  RAISE NOTICE '✅ Usuario actualizado correctamente';
+  
+  -- Verificar actualización
+  SELECT get_usuario(v_id_usuario) INTO v_usuario;
+  IF v_usuario->>'success' != 'true' THEN
+    RAISE EXCEPTION '❌ Fallo get_usuario después de actualizar';
+  END IF;
+  
+  IF v_usuario->'data'->>'telefono' != '+56 9 9999 0002' THEN
+    RAISE EXCEPTION '❌ Fallo sp_update_usuario - teléfono no se actualizó';
+  END IF;
+  RAISE NOTICE '✅ Verificación de actualización exitosa';
+  
+  -- LIST usuarios
+  SELECT list_usuarios(10, 0, NULL, NULL, NULL) INTO v_usuarios;
+  IF v_usuarios->>'success' != 'true' THEN
+    RAISE EXCEPTION '❌ Fallo list_usuarios';
+  END IF;
+  RAISE NOTICE '✅ Lista de usuarios funcionando';
+  
+  -- SEARCH usuarios
+  SELECT search_usuarios('TEST') INTO v_usuarios;
+  IF v_usuarios->>'success' != 'true' THEN
+    RAISE EXCEPTION '❌ Fallo search_usuarios';
+  END IF;
+  RAISE NOTICE '✅ Búsqueda de usuarios funcionando';
+  
+  -- STATS usuarios
+  SELECT get_usuario_stats() INTO v_usuarios;
+  IF v_usuarios->>'success' != 'true' THEN
+    RAISE EXCEPTION '❌ Fallo get_usuario_stats';
+  END IF;
+  RAISE NOTICE '✅ Estadísticas de usuarios funcionando';
+  
+  RAISE NOTICE '🎉 Pruebas de USUARIO completadas exitosamente';
+END $$;
+
+-- =========================================
+-- 7) PRUEBAS DE OT (Orden de Trabajo)
 -- =========================================
 
 DO $$
@@ -393,6 +475,7 @@ DECLARE
   v_id_empresa INT;
   v_id_contacto INT;
   v_id_cotizacion INT;
+  v_id_usuario INT;
   v_id_ot INT;
   v_ot ot;
 BEGIN
@@ -402,11 +485,12 @@ BEGIN
   SELECT id_empresa INTO v_id_empresa FROM empresa WHERE cod_empresa = 'TEST001';
   SELECT id_contacto INTO v_id_contacto FROM contacto WHERE email = 'contacto.actualizado@test.com';
   SELECT id_cotizacion INTO v_id_cotizacion FROM cotizacion WHERE num_cotizacion = 'COT-TEST-001';
+  SELECT id_usuario INTO v_id_usuario FROM usuario WHERE email = 'usuario.actualizado@empresa.com';
   
   -- CREATE OT
   SELECT sp_create_ot(
     'OT-TEST-001', v_id_cotizacion, 'PO-TEST-001', v_id_empresa, v_id_contacto,
-    'OT de prueba para validar funcionalidad', 1, 1, 'Pendiente',
+    'OT de prueba para validar funcionalidad', 1, 'Pendiente',
     '2024-01-15', '2024-02-15', 'Alta', 'OT de prueba'
   ) INTO v_id_ot;
   
@@ -432,7 +516,7 @@ BEGIN
   -- UPDATE
   PERFORM sp_update_ot_info(
     v_id_ot, v_id_cotizacion, 'PO-TEST-001-UPDATED', v_id_empresa, v_id_contacto,
-    'OT de prueba actualizada', 2, 1, 'En Progreso',
+    'OT de prueba actualizada', 2, 'En Progreso',
     '2024-01-20', '2024-02-20', 'Media', 'OT de prueba actualizada'
   );
   SELECT * INTO v_ot FROM get_ot(v_id_ot);
@@ -457,7 +541,7 @@ BEGIN
 END $$;
 
 -- =========================================
--- 7) PRUEBAS DE DETALLES DE OT
+-- 8) PRUEBAS DE DETALLES DE OT
 -- =========================================
 
 DO $$
@@ -518,47 +602,49 @@ BEGIN
 END $$;
 
 -- =========================================
--- 8) PRUEBAS DE ARCHIVOS Y TIEMPO DE OT
+-- 9) PRUEBAS DE ARCHIVOS Y TIEMPO DE OT
 -- =========================================
 
 DO $$
 DECLARE
   v_id_ot INT;
+  v_id_usuario INT;
   v_id_archivo INT;
   v_id_tiempo INT;
 BEGIN
   RAISE NOTICE '🧪 Probando ARCHIVOS Y TIEMPO DE OT...';
   
-  -- Obtener ID de OT
+  -- Obtener IDs necesarios
   SELECT id_ot INTO v_id_ot FROM ot WHERE num_ot = 'OT-TEST-001';
+  SELECT id_usuario INTO v_id_usuario FROM usuario WHERE email = 'usuario.actualizado@empresa.com';
   
   -- OT Plano/Solid
-  SELECT sp_create_ot_plano_solido(
+  SELECT sp_create_plano_solido(
     v_id_ot, 'plano_test.dwg', 'plano', '/archivos/test/', 'Plano de prueba'
   ) INTO v_id_archivo;
   
   IF v_id_archivo IS NULL OR v_id_archivo <= 0 THEN
-    RAISE EXCEPTION '❌ Fallo sp_create_ot_plano_solido';
+    RAISE EXCEPTION '❌ Fallo sp_create_plano_solido';
   END IF;
   RAISE NOTICE '✅ Archivo agregado a OT correctamente';
   
   -- OT Registro Tiempo
-  SELECT sp_create_ot_registro_tiempo(
-    v_id_ot, 1, '2024-01-15 08:00:00', '2024-01-15 12:00:00', 240, 'Trabajo de prueba', 'Completado'
+  SELECT sp_create_registro_tiempo(
+    v_id_ot, v_id_usuario, '2024-01-15 08:00:00', '2024-01-15 12:00:00', 240, 'Trabajo de prueba', 'Completado'
   ) INTO v_id_tiempo;
   
   IF v_id_tiempo IS NULL OR v_id_tiempo <= 0 THEN
-    RAISE EXCEPTION '❌ Fallo sp_create_ot_registro_tiempo';
+    RAISE EXCEPTION '❌ Fallo sp_create_registro_tiempo';
   END IF;
   RAISE NOTICE '✅ Registro de tiempo agregado a OT correctamente';
   
   -- Verificar listas
-  IF NOT EXISTS (SELECT 1 FROM list_ot_planos_solidos(v_id_ot, 10, 0)) THEN
-    RAISE EXCEPTION '❌ Fallo list_ot_planos_solidos';
+  IF NOT EXISTS (SELECT 1 FROM list_planos_solidos(v_id_ot, 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_planos_solidos';
   END IF;
   
-  IF NOT EXISTS (SELECT 1 FROM list_ot_registros_tiempo(v_id_ot, 10, 0)) THEN
-    RAISE EXCEPTION '❌ Fallo list_ot_registros_tiempo';
+  IF NOT EXISTS (SELECT 1 FROM list_registros_tiempo(v_id_ot, 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_registros_tiempo';
   END IF;
   
   RAISE NOTICE '✅ Listas de archivos y tiempo funcionando correctamente';
@@ -567,7 +653,7 @@ BEGIN
 END $$;
 
 -- =========================================
--- 9) PRUEBAS DE ELIMINACIÓN (Orden inverso)
+-- 10) PRUEBAS DE ELIMINACIÓN (Orden inverso)
 -- =========================================
 
 DO $$
@@ -579,6 +665,7 @@ DECLARE
   v_id_material INT;
   v_id_importacion INT;
   v_id_proceso INT;
+  v_id_usuario INT;
   v_id_ot_mat INT;
   v_id_ot_imp INT;
   v_id_ot_proc INT;
@@ -596,6 +683,7 @@ BEGIN
   SELECT id_material INTO v_id_material FROM material WHERE descripcion LIKE '%TEST%' LIMIT 1;
   SELECT id_importacion INTO v_id_importacion FROM importacion WHERE descripcion LIKE '%TEST%' LIMIT 1;
   SELECT id_proceso INTO v_id_proceso FROM proceso_maquina WHERE descripcion LIKE '%TEST%' LIMIT 1;
+  SELECT id_usuario INTO v_id_usuario FROM usuario WHERE email LIKE '%@test.com' OR email LIKE '%@empresa.com' LIMIT 1;
   
   -- Eliminar detalles de OT
   SELECT id INTO v_id_ot_mat FROM ot_material WHERE id_ot = v_id_ot AND id_material = v_id_material LIMIT 1;
@@ -608,11 +696,11 @@ BEGIN
   RAISE NOTICE '✅ Detalles de OT eliminados correctamente';
   
   -- Eliminar archivo y tiempo de OT
-  SELECT id INTO v_id_archivo FROM ot_plano_solido WHERE id_ot = v_id_ot LIMIT 1;
-  SELECT id INTO v_id_tiempo FROM ot_registro_tiempo WHERE id_ot = v_id_ot LIMIT 1;
+  SELECT id INTO v_id_archivo FROM plano_solido WHERE id_ot = v_id_ot LIMIT 1;
+  SELECT id INTO v_id_tiempo FROM registro_tiempo WHERE id_ot = v_id_ot LIMIT 1;
   
-  PERFORM sp_delete_ot_plano_solido(v_id_archivo);
-  PERFORM sp_delete_ot_registro_tiempo(v_id_tiempo);
+  PERFORM sp_delete_plano_solido(v_id_archivo);
+  PERFORM sp_delete_registro_tiempo(v_id_tiempo);
   RAISE NOTICE '✅ Archivo y tiempo de OT eliminados correctamente';
   
   -- Eliminar OT (detalles caen por CASCADE)
@@ -657,6 +745,16 @@ BEGIN
   END IF;
   RAISE NOTICE '✅ Empresa eliminada correctamente';
   
+  -- Eliminar usuario
+  IF v_id_usuario IS NOT NULL THEN
+    PERFORM sp_delete_usuario(v_id_usuario);
+    SELECT COUNT(*) INTO v_cnt FROM usuario WHERE id_usuario = v_id_usuario;
+    IF v_cnt != 0 THEN
+      RAISE EXCEPTION '❌ Fallo sp_delete_usuario';
+    END IF;
+    RAISE NOTICE '✅ Usuario eliminado correctamente';
+  END IF;
+  
   -- Eliminar catálogos
   PERFORM sp_delete_material(v_id_material);
   PERFORM sp_delete_importacion(v_id_importacion);
@@ -699,5 +797,6 @@ BEGIN
   RAISE NOTICE '   🆕 Detalles de OT (material, importación, proceso)';
   RAISE NOTICE '   🆕 Archivos de OT (planos, documentos)';
   RAISE NOTICE '   🆕 Control de tiempo de OT (colaboradores)';
+  RAISE NOTICE '   🆕 Usuario (Colaboradores) - NUEVA SECCIÓN';
   RAISE NOTICE '';
 END $$;

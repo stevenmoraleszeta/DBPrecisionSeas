@@ -87,7 +87,6 @@ CREATE TABLE ot (
     id_contacto      INT,
     descripcion      TEXT,
     cantidad         INT DEFAULT 0,
-    id_colaborador   INT,
     estado           VARCHAR(50) DEFAULT 'Pendiente',
     fecha_inicio     DATE,
     fecha_fin        DATE,
@@ -116,7 +115,7 @@ CREATE TABLE ot (
 CREATE INDEX idx_ot_id_cotizacion ON ot (id_cotizacion);
 CREATE INDEX idx_ot_id_empresa ON ot (id_empresa);
 CREATE INDEX idx_ot_id_contacto ON ot (id_contacto);
-CREATE INDEX idx_ot_id_colaborador ON ot (id_colaborador);
+
 
 -- =========================================
 -- Catálogos: MATERIAL / IMPORTACION
@@ -317,32 +316,68 @@ CREATE TABLE ot_proceso (
 CREATE INDEX idx_ot_proceso_proceso ON ot_proceso (id_proceso);
 
 -- =========================================
+-- USUARIO (para colaboradores)
+-- =========================================
+CREATE TABLE usuario (
+    id_usuario SERIAL PRIMARY KEY,
+    nombre_usuario VARCHAR(100) NOT NULL,
+    apellido_usuario VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    telefono VARCHAR(20),
+    cargo VARCHAR(100),
+    departamento VARCHAR(100),
+    estado VARCHAR(20) DEFAULT 'Activo' CHECK (estado IN ('Activo', 'Inactivo', 'Suspendido')),
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    observaciones TEXT
+);
+
+-- Crear índices para mejorar el rendimiento
+CREATE INDEX idx_usuario_email ON usuario(email);
+CREATE INDEX idx_usuario_estado ON usuario(estado);
+CREATE INDEX idx_usuario_departamento ON usuario(departamento);
+
+-- Crear trigger para actualizar fecha_actualizacion
+CREATE OR REPLACE FUNCTION update_usuario_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER trigger_update_usuario_timestamp
+    BEFORE UPDATE ON usuario
+    FOR EACH ROW
+    EXECUTE FUNCTION update_usuario_timestamp();
+
+-- =========================================
 -- Tablas específicas de OT
 -- =========================================
 
--- OT <-> PLANO/SOLID (para archivos futuros)
-CREATE TABLE ot_plano_solido (
+-- PLANO/SOLID (para archivos, puede estar asociado a OT o ser independiente)
+CREATE TABLE plano_solido (
     id SERIAL PRIMARY KEY,
-    id_ot           INT NOT NULL,
+    id_ot           INT NULL,
     nombre_archivo  VARCHAR(255),
     tipo_archivo    VARCHAR(50),
     ruta_archivo    TEXT,
     fecha_subida    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     observaciones   TEXT,
 
-    CONSTRAINT fk_otps_ot
+    CONSTRAINT fk_ps_ot
         FOREIGN KEY (id_ot)
         REFERENCES ot(id_ot)
         ON UPDATE CASCADE
-        ON DELETE CASCADE
+        ON DELETE SET NULL
 );
 
-CREATE INDEX idx_ot_plano_solido_ot ON ot_plano_solido (id_ot);
+CREATE INDEX idx_plano_solido_ot ON plano_solido (id_ot);
 
--- OT <-> REGISTRO TIEMPO (para colaboradores)
-CREATE TABLE ot_registro_tiempo (
+-- REGISTRO TIEMPO (para colaboradores, puede estar asociado a OT o ser independiente)
+CREATE TABLE registro_tiempo (
     id SERIAL PRIMARY KEY,
-    id_ot           INT NOT NULL,
+    id_ot           INT NULL,
     id_colaborador  INT,
     fecha_inicio    TIMESTAMP,
     fecha_fin       TIMESTAMP,
@@ -350,12 +385,22 @@ CREATE TABLE ot_registro_tiempo (
     descripcion     TEXT,
     estado          VARCHAR(50) DEFAULT 'En Progreso',
 
-    CONSTRAINT fk_otrt_ot
+    CONSTRAINT fk_rt_ot
         FOREIGN KEY (id_ot)
         REFERENCES ot(id_ot)
         ON UPDATE CASCADE
-        ON DELETE CASCADE
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_rt_colaborador
+        FOREIGN KEY (id_colaborador)
+        REFERENCES usuario(id_usuario)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
 );
 
-CREATE INDEX idx_ot_registro_tiempo_ot ON ot_registro_tiempo (id_ot);
-CREATE INDEX idx_ot_registro_tiempo_colaborador ON ot_registro_tiempo (id_colaborador);
+CREATE INDEX idx_registro_tiempo_ot ON registro_tiempo (id_ot);
+CREATE INDEX idx_registro_tiempo_colaborador ON registro_tiempo (id_colaborador);
+
+
+
+
