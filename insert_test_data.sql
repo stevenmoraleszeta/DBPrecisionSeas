@@ -152,7 +152,7 @@ INSERT INTO registro_tiempo (id_ot, id_colaborador, fecha_inicio, fecha_fin, tie
 -- RESUMEN DE INSERCIONES
 -- =========================================
 -- 3 empresas
--- 5 usuarios
+-- 15 usuarios (ampliado para mejor cobertura de datos de prueba)
 -- 4 contactos
 -- 3 cotizaciones
 -- 4 materiales
