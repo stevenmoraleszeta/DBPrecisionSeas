@@ -630,7 +630,9 @@ BEGIN
   
   -- OT Registro Tiempo
   SELECT sp_create_registro_tiempo(
-    v_id_ot, v_id_usuario, '2024-01-15 08:00:00', '2024-01-15 12:00:00', 240, 'Trabajo de prueba', 'Completado'
+    v_id_usuario, '2024-01-15 08:00:00', '2024-01-15 12:00:00', 
+    240, 'Trabajo de prueba', 'Completado',
+    v_id_ot, '2024-01-15 08:30:00', '2024-01-15 12:30:00'
   ) INTO v_id_tiempo;
   
   IF v_id_tiempo IS NULL OR v_id_tiempo <= 0 THEN
@@ -648,6 +650,63 @@ BEGIN
   END IF;
   
   RAISE NOTICE '✅ Listas de archivos y tiempo funcionando correctamente';
+  
+  -- PRUEBAS ADICIONALES DE REGISTRO_TIEMPO
+  -- =========================================
+  
+  -- READ registro específico
+  IF NOT EXISTS (SELECT 1 FROM get_registro_tiempo(v_id_tiempo)) THEN
+    RAISE EXCEPTION '❌ Fallo get_registro_tiempo';
+  END IF;
+  RAISE NOTICE '✅ Lectura de registro específico funcionando';
+  
+  -- UPDATE registro
+  PERFORM sp_update_registro_tiempo(
+    v_id_tiempo, '2024-01-15 09:00:00', '2024-01-15 13:00:00',
+    300, 'Trabajo de prueba actualizado', 'Completado',
+    '2024-01-15 09:30:00', '2024-01-15 13:30:00'
+  );
+  RAISE NOTICE '✅ Actualización de registro funcionando';
+  
+  -- LIST por colaborador
+  IF NOT EXISTS (SELECT 1 FROM list_registros_por_colaborador(v_id_usuario, 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_registros_por_colaborador';
+  END IF;
+  RAISE NOTICE '✅ Lista por colaborador funcionando';
+  
+  -- LIST por estado
+  IF NOT EXISTS (SELECT 1 FROM list_registros_por_estado(v_id_ot, 'Completado', 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_registros_por_estado';
+  END IF;
+  RAISE NOTICE '✅ Lista por estado funcionando';
+  
+  -- REGISTROS DEL DÍA
+  IF NOT EXISTS (SELECT 1 FROM get_registros_hoy(v_id_ot)) THEN
+    RAISE EXCEPTION '❌ Fallo get_registros_hoy';
+  END IF;
+  RAISE NOTICE '✅ Registros del día funcionando';
+  
+  -- TIEMPO TOTAL TRABAJADO
+  IF NOT EXISTS (SELECT 1 FROM get_tiempo_total_trabajado(v_id_ot)) THEN
+    RAISE EXCEPTION '❌ Fallo get_tiempo_total_trabajado';
+  END IF;
+  RAISE NOTICE '✅ Tiempo total trabajado funcionando';
+  
+  -- TIEMPO POR COLABORADOR
+  IF NOT EXISTS (SELECT 1 FROM get_tiempo_por_colaborador(v_id_ot)) THEN
+    RAISE EXCEPTION '❌ Fallo get_tiempo_por_colaborador';
+  END IF;
+  RAISE NOTICE '✅ Tiempo por colaborador funcionando';
+  
+  -- COMPLETAR REGISTRO (crear uno nuevo para probar)
+  SELECT sp_create_registro_tiempo(
+    v_id_usuario, '2024-01-15 14:00:00', NULL, 
+    0, 'Trabajo en progreso', 'En Progreso',
+    v_id_ot, '2024-01-15 14:30:00', '2024-01-15 18:30:00'
+  ) INTO v_id_tiempo;
+  
+  PERFORM sp_completar_registro_tiempo(v_id_tiempo, '2024-01-15 18:00:00', 240);
+  RAISE NOTICE '✅ Completar registro funcionando';
   
   RAISE NOTICE '🎉 Pruebas de ARCHIVOS Y TIEMPO DE OT completadas exitosamente';
 END $$;
@@ -796,7 +855,14 @@ BEGIN
   RAISE NOTICE '   🆕 OT (Orden de Trabajo) - NUEVA SECCIÓN';
   RAISE NOTICE '   🆕 Detalles de OT (material, importación, proceso)';
   RAISE NOTICE '   🆕 Archivos de OT (planos, documentos)';
-  RAISE NOTICE '   🆕 Control de tiempo de OT (colaboradores)';
+  RAISE NOTICE '   🆕 Control de tiempo de OT (colaboradores) - COMPLETO';
+  RAISE NOTICE '     • sp_create_registro_tiempo (con fechas esperadas)';
+  RAISE NOTICE '     • sp_update_registro_tiempo (con fechas esperadas)';
+  RAISE NOTICE '     • get_registro_tiempo, list_registros_tiempo';
+  RAISE NOTICE '     • list_registros_por_colaborador, list_registros_por_estado';
+  RAISE NOTICE '     • get_registros_hoy, get_tiempo_total_trabajado';
+  RAISE NOTICE '     • get_tiempo_por_colaborador, sp_completar_registro_tiempo';
+  RAISE NOTICE '     • sp_delete_registro_tiempo';
   RAISE NOTICE '   🆕 Usuario (Colaboradores) - NUEVA SECCIÓN';
   RAISE NOTICE '';
 END $$;

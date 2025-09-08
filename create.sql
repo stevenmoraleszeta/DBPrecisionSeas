@@ -381,6 +381,8 @@ CREATE TABLE registro_tiempo (
     id_colaborador  INT,
     fecha_inicio    TIMESTAMP,
     fecha_fin       TIMESTAMP,
+    fecha_inicio_esperada TIMESTAMP,
+    fecha_fin_esperada TIMESTAMP,
     tiempo_trabajado INT DEFAULT 0, -- en minutos
     descripcion     TEXT,
     estado          VARCHAR(50) DEFAULT 'En Progreso',

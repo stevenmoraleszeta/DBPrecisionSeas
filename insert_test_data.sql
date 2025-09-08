@@ -141,12 +141,12 @@ INSERT INTO plano_solido (id_ot, nombre_archivo, tipo_archivo, ruta_archivo, obs
 -- =========================================
 -- 9) REGISTROS DE TIEMPO (Depende de OT y usuario, pero puede ser independiente)
 -- =========================================
-INSERT INTO registro_tiempo (id_ot, id_colaborador, fecha_inicio, fecha_fin, tiempo_trabajado, descripcion, estado) VALUES
-(1, 1, '2024-01-15 08:00:00', '2024-01-15 12:00:00', 240, 'Preparación y corte de materiales', 'Completado'),
-(1, 1, '2024-01-16 08:00:00', '2024-01-16 16:00:00', 480, 'Soldadura de estructura principal', 'Completado'),
-(1, 2, '2024-01-17 08:00:00', '2024-01-17 14:00:00', 360, 'Pintado y acabado', 'En Progreso'),
-(3, 3, '2024-01-10 08:00:00', '2024-01-10 17:00:00', 540, 'Mantenimiento completo motor 1', 'Completado'),
-(3, 3, '2024-01-11 08:00:00', '2024-01-11 17:00:00', 540, 'Mantenimiento completo motor 2', 'Completado');
+INSERT INTO registro_tiempo (id_ot, id_colaborador, fecha_inicio, fecha_fin, fecha_inicio_esperada, fecha_fin_esperada, tiempo_trabajado, descripcion, estado) VALUES
+(1, 1, '2024-01-15 08:00:00', '2024-01-15 12:00:00', '2024-01-15 08:30:00', '2024-01-15 12:30:00', 240, 'Preparación y corte de materiales', 'Completado'),
+(1, 1, '2024-01-16 08:00:00', '2024-01-16 16:00:00', '2024-01-16 08:00:00', '2024-01-16 17:00:00', 480, 'Soldadura de estructura principal', 'Completado'),
+(1, 2, '2024-01-17 08:00:00', '2024-01-17 14:00:00', '2024-01-17 09:00:00', '2024-01-17 15:00:00', 360, 'Pintado y acabado', 'En Progreso'),
+(3, 3, '2024-01-10 08:00:00', '2024-01-10 17:00:00', '2024-01-10 08:00:00', '2024-01-10 18:00:00', 540, 'Mantenimiento completo motor 1', 'Completado'),
+(3, 3, '2024-01-11 08:00:00', '2024-01-11 17:00:00', '2024-01-11 08:00:00', '2024-01-11 18:00:00', 540, 'Mantenimiento completo motor 2', 'Completado');
 
 -- =========================================
 -- RESUMEN DE INSERCIONES
