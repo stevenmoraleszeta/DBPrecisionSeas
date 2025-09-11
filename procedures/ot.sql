@@ -57,9 +57,12 @@ $$ LANGUAGE sql STABLE;
 
 -- READ (lista con información relacionada)
 CREATE OR REPLACE FUNCTION list_ots(
-  p_id_empresa INT DEFAULT NULL, p_id_cotizacion INT DEFAULT NULL,
-  p_estado VARCHAR DEFAULT NULL, p_search TEXT DEFAULT NULL,
-  p_limit INT DEFAULT 50, p_offset INT DEFAULT 0
+  p_id_empresa INT DEFAULT NULL, 
+  p_id_cotizacion INT DEFAULT NULL,
+  p_estado VARCHAR DEFAULT NULL, 
+  p_search TEXT DEFAULT NULL,
+  p_limit INT DEFAULT 50, 
+  p_offset INT DEFAULT 0
 ) RETURNS TABLE(
   id_ot INT,
   num_ot VARCHAR,

@@ -9,7 +9,7 @@
 
 -- Eliminar todos los datos existentes (orden inverso por dependencias FK)
 DELETE FROM registro_tiempo;
-DELETE FROM plano_solido;
+DELETE FROM archivo;
 DELETE FROM ot_proceso;
 DELETE FROM ot_material;
 DELETE FROM ot_importacion;
@@ -31,7 +31,7 @@ ALTER SEQUENCE material_id_material_seq RESTART WITH 1;
 ALTER SEQUENCE importacion_id_importacion_seq RESTART WITH 1;
 ALTER SEQUENCE proceso_maquina_id_proceso_seq RESTART WITH 1;
 ALTER SEQUENCE ot_id_ot_seq RESTART WITH 1;
-ALTER SEQUENCE plano_solido_id_seq RESTART WITH 1;
+ALTER SEQUENCE archivo_id_seq RESTART WITH 1;
 ALTER SEQUENCE registro_tiempo_id_seq RESTART WITH 1;
 
 -- =========================================
@@ -133,10 +133,28 @@ INSERT INTO ot_proceso (id_ot, id_proceso, tiempo, total) VALUES
 -- =========================================
 -- 8) ARCHIVOS (Depende de OT, pero puede ser independiente)
 -- =========================================
-INSERT INTO plano_solido (id_ot, nombre_archivo, tipo_archivo, ruta_archivo, observaciones) VALUES
-(1, 'plano_casco_001.dwg', 'plano', '/archivos/ot/001/planos/', 'Plano técnico del casco'),
-(1, 'modelo_3d_casco.sldprt', 'solid', '/archivos/ot/001/solid/', 'Modelo 3D en SolidWorks'),
-(2, 'especificaciones_propulsion.pdf', 'documento', '/archivos/ot/002/docs/', 'Especificaciones técnicas');
+INSERT INTO archivo (
+  id_ot, nombre_archivo, nombre_original, tipo_archivo, tipo_mime,
+  tamano_archivo, ruta_archivo, observaciones, activo
+) VALUES
+(1, 'plano_casco_001.dwg', 'plano_casco_001.dwg', 'cad', 'application/dwg',
+ 2048576, 'uploads/planos/plano_casco_001-1234567890-abc123.dwg', 
+ 'Plano técnico del casco', TRUE),
+(1, 'modelo_3d_casco.sldprt', 'modelo_3d_casco.sldprt', 'cad', 'application/octet-stream',
+ 5242880, 'uploads/planos/modelo_3d_casco-1234567891-def456.sldprt',
+ 'Modelo 3D en SolidWorks', TRUE),
+(2, 'especificaciones_propulsion.pdf', 'especificaciones_propulsion.pdf', 'documento', 'application/pdf',
+ 1024000, 'uploads/documentos/especificaciones_propulsion-1234567892-ghi789.pdf',
+ 'Especificaciones técnicas', TRUE),
+(3, 'foto_motor_1.jpg', 'foto_motor_1.jpg', 'imagen', 'image/jpeg',
+ 512000, 'uploads/imagenes/foto_motor_1-1234567893-jkl012.jpg',
+ 'Foto del motor antes del mantenimiento', TRUE),
+(3, 'video_prueba_motor.mp4', 'video_prueba_motor.mp4', 'video', 'video/mp4',
+ 15728640, 'uploads/documentos/video_prueba_motor-1234567894-mno345.mp4',
+ 'Video de prueba del motor funcionando', TRUE),
+(NULL, 'manual_operacion_general.pdf', 'manual_operacion_general.pdf', 'documento', 'application/pdf',
+ 2048000, 'uploads/documentos/manual_operacion_general-1234567895-pqr678.pdf',
+ 'Manual general de operación (archivo independiente)', TRUE);
 
 -- =========================================
 -- 9) REGISTROS DE TIEMPO (Depende de OT y usuario, pero puede ser independiente)
@@ -162,6 +180,6 @@ INSERT INTO registro_tiempo (id_ot, id_colaborador, fecha_inicio, fecha_fin, fec
 -- 4 relaciones OT-Material
 -- 2 relaciones OT-Importación (eliminada referencia problemática)
 -- 4 relaciones OT-Proceso
--- 3 archivos (eliminado archivo problemático)
+-- 6 archivos (incluyendo diferentes tipos: CAD, documentos, imágenes, videos)
 -- 5 registros de tiempo
 -- =========================================

@@ -12,7 +12,7 @@
 -- Limpiar datos de pruebas anteriores
 BEGIN;
 DELETE FROM registro_tiempo        WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
-DELETE FROM plano_solido           WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
+DELETE FROM archivo                WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
 DELETE FROM ot_proceso             WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
 DELETE FROM ot_importacion         WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
 DELETE FROM ot_material            WHERE id_ot IN (SELECT id_ot FROM ot WHERE num_ot LIKE 'OT-TEST-%');
@@ -618,13 +618,15 @@ BEGIN
   SELECT id_ot INTO v_id_ot FROM ot WHERE num_ot = 'OT-TEST-001';
   SELECT id_usuario INTO v_id_usuario FROM usuario WHERE email = 'usuario.actualizado@empresa.com';
   
-  -- OT Plano/Solid
-  SELECT sp_create_plano_solido(
-    v_id_ot, 'plano_test.dwg', 'plano', '/archivos/test/', 'Plano de prueba'
+  -- OT Archivo
+  SELECT sp_create_archivo(
+    'plano_test.dwg', 'plano_test.dwg', 'cad', 'application/dwg',
+    1024000, 'uploads/planos/plano_test-1234567890-test123.dwg',
+    v_id_ot, 'Plano de prueba'
   ) INTO v_id_archivo;
   
   IF v_id_archivo IS NULL OR v_id_archivo <= 0 THEN
-    RAISE EXCEPTION '❌ Fallo sp_create_plano_solido';
+    RAISE EXCEPTION '❌ Fallo sp_create_archivo';
   END IF;
   RAISE NOTICE '✅ Archivo agregado a OT correctamente';
   
@@ -641,8 +643,8 @@ BEGIN
   RAISE NOTICE '✅ Registro de tiempo agregado a OT correctamente';
   
   -- Verificar listas
-  IF NOT EXISTS (SELECT 1 FROM list_planos_solidos(v_id_ot, 10, 0)) THEN
-    RAISE EXCEPTION '❌ Fallo list_planos_solidos';
+  IF NOT EXISTS (SELECT 1 FROM list_archivos(v_id_ot, 10, 0)) THEN
+    RAISE EXCEPTION '❌ Fallo list_archivos';
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM list_registros_tiempo(v_id_ot, 10, 0)) THEN
@@ -755,10 +757,10 @@ BEGIN
   RAISE NOTICE '✅ Detalles de OT eliminados correctamente';
   
   -- Eliminar archivo y tiempo de OT
-  SELECT id INTO v_id_archivo FROM plano_solido WHERE id_ot = v_id_ot LIMIT 1;
+  SELECT id INTO v_id_archivo FROM archivo WHERE id_ot = v_id_ot LIMIT 1;
   SELECT id INTO v_id_tiempo FROM registro_tiempo WHERE id_ot = v_id_ot LIMIT 1;
   
-  PERFORM sp_delete_plano_solido(v_id_archivo);
+  PERFORM sp_delete_archivo(v_id_archivo);
   PERFORM sp_delete_registro_tiempo(v_id_tiempo);
   RAISE NOTICE '✅ Archivo y tiempo de OT eliminados correctamente';
   
@@ -854,7 +856,7 @@ BEGIN
   RAISE NOTICE '   • Detalles de cotización (material, importación, proceso)';
   RAISE NOTICE '   🆕 OT (Orden de Trabajo) - NUEVA SECCIÓN';
   RAISE NOTICE '   🆕 Detalles de OT (material, importación, proceso)';
-  RAISE NOTICE '   🆕 Archivos de OT (planos, documentos)';
+  RAISE NOTICE '   🆕 Archivos de OT (archivos, documentos)';
   RAISE NOTICE '   🆕 Control de tiempo de OT (colaboradores) - COMPLETO';
   RAISE NOTICE '     • sp_create_registro_tiempo (con fechas esperadas)';
   RAISE NOTICE '     • sp_update_registro_tiempo (con fechas esperadas)';

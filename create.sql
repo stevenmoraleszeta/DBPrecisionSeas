@@ -355,24 +355,36 @@ CREATE TRIGGER trigger_update_usuario_timestamp
 -- Tablas específicas de OT
 -- =========================================
 
--- PLANO/SOLID (para archivos, puede estar asociado a OT o ser independiente)
-CREATE TABLE plano_solido (
+-- ARCHIVOS (para archivos, puede estar asociado a OT o ser independiente)
+CREATE TABLE archivo (
     id SERIAL PRIMARY KEY,
     id_ot           INT NULL,
-    nombre_archivo  VARCHAR(255),
-    tipo_archivo    VARCHAR(50),
-    ruta_archivo    TEXT,
+    nombre_archivo  VARCHAR(255) NOT NULL,
+    nombre_original VARCHAR(255) NOT NULL,
+    tipo_archivo    VARCHAR(50) NOT NULL,
+    tipo_mime       VARCHAR(100) NOT NULL,
+    tamano_archivo  BIGINT NOT NULL DEFAULT 0,
+    ruta_archivo    TEXT NOT NULL,
     fecha_subida    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     observaciones   TEXT,
+    activo          BOOLEAN DEFAULT TRUE,
 
-    CONSTRAINT fk_ps_ot
+    CONSTRAINT fk_archivo_ot
         FOREIGN KEY (id_ot)
         REFERENCES ot(id_ot)
         ON UPDATE CASCADE
         ON DELETE SET NULL
 );
 
-CREATE INDEX idx_plano_solido_ot ON plano_solido (id_ot);
+-- Índices para la tabla archivo
+CREATE INDEX idx_archivo_ot ON archivo (id_ot);
+CREATE INDEX idx_archivo_tipo ON archivo (tipo_archivo);
+CREATE INDEX idx_archivo_activo ON archivo (activo);
+CREATE INDEX idx_archivo_tipo_mime ON archivo (tipo_mime);
+CREATE INDEX idx_archivo_fecha_subida ON archivo (fecha_subida);
+
+-- Comentarios para documentar la tabla
 
 -- REGISTRO TIEMPO (para colaboradores, puede estar asociado a OT o ser independiente)
 CREATE TABLE registro_tiempo (
