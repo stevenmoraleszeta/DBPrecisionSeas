@@ -109,11 +109,14 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Obtener usuario por ID
+-- Función corregida para obtener usuario por ID
 CREATE OR REPLACE FUNCTION get_usuario(p_id_usuario INTEGER)
 RETURNS JSON AS $$
 DECLARE
     v_result JSON;
+    v_usuario_data JSON;
 BEGIN
+    -- Primero verificar si el usuario existe
     SELECT json_build_object(
         'id_usuario', u.id_usuario,
         'nombre_usuario', u.nombre_usuario,
@@ -126,11 +129,12 @@ BEGIN
         'fecha_creacion', u.fecha_creacion,
         'fecha_actualizacion', u.fecha_actualizacion,
         'observaciones', u.observaciones
-    ) INTO v_result
+    ) INTO v_usuario_data
     FROM usuario u
     WHERE u.id_usuario = p_id_usuario;
     
-    IF v_result IS NULL THEN
+    -- Verificar si se encontró el usuario
+    IF v_usuario_data IS NULL THEN
         v_result := json_build_object(
             'success', false,
             'message', 'Usuario no encontrado'
@@ -138,11 +142,17 @@ BEGIN
     ELSE
         v_result := json_build_object(
             'success', true,
-            'data', v_result
+            'data', v_usuario_data
         );
     END IF;
     
     RETURN v_result;
+    
+EXCEPTION WHEN OTHERS THEN
+    RETURN json_build_object(
+        'success', false,
+        'message', 'Error al obtener usuario: ' || SQLERRM
+    );
 END;
 $$ LANGUAGE plpgsql;
 
