@@ -376,9 +376,121 @@ BEGIN
     
 EXCEPTION
     WHEN OTHERS THEN
-        RETURN json_build_object(
-            'success', false,
-            'message', 'Error al buscar usuario: ' || SQLERRM
-        );
+    RETURN json_build_object(
+        'success', false,
+        'message', 'Error al buscar usuario: ' || SQLERRM
+    );
 END;
 $$ LANGUAGE plpgsql;
+
+-- =========================================
+-- CREATE/UPDATE ADMIN USER
+-- =========================================
+
+-- Create or update admin user with correct password hash
+-- Password: Admin123!
+-- Hash: $2b$12$oQpM2V0i0cAwxRw9nIdLEe9he12/QCKjVHr0SzO5RhZK2FHDMbpx2
+
+-- First, check if admin user exists
+DO $$
+DECLARE
+    v_admin_exists BOOLEAN;
+    v_admin_id INT;
+BEGIN
+    -- Check if admin user exists
+    SELECT EXISTS(SELECT 1 FROM usuario WHERE email = 'admin@precisionseas.com') INTO v_admin_exists;
+    
+    IF v_admin_exists THEN
+        -- Update existing admin user with password
+        UPDATE usuario 
+        SET password = '$2b$12$oQpM2V0i0cAwxRw9nIdLEe9he12/QCKjVHr0SzO5RhZK2FHDMbpx2',
+            nombre_usuario = 'Admin',
+            apellido_usuario = 'Sistema',
+            cargo = 'Administrador',
+            departamento = 'Sistemas',
+            estado = 'Activo',
+            observaciones = 'Usuario administrador principal del sistema Precision Seas ERP'
+        WHERE email = 'admin@precisionseas.com';
+        
+        RAISE NOTICE '✅ Usuario admin actualizado con contraseña';
+    ELSE
+        -- Create new admin user
+        INSERT INTO usuario (
+            nombre_usuario, 
+            apellido_usuario, 
+            email, 
+            telefono, 
+            cargo, 
+            departamento, 
+            estado, 
+            password,
+            observaciones
+        ) VALUES (
+            'Admin', 
+            'Sistema', 
+            'admin@precisionseas.com', 
+            '+56 9 0000 0000', 
+            'Administrador', 
+            'Sistemas', 
+            'Activo', 
+            '$2b$12$oQpM2V0i0cAwxRw9nIdLEe9he12/QCKjVHr0SzO5RhZK2FHDMbpx2',
+            'Usuario administrador principal del sistema Precision Seas ERP'
+        );
+        
+        RAISE NOTICE '✅ Usuario admin creado con contraseña';
+    END IF;
+END $$;
+
+-- =========================================
+-- VERIFICATION QUERIES
+-- =========================================
+
+-- Verify admin user exists and has password
+DO $$
+DECLARE
+    v_admin_record RECORD;
+    v_auth_test JSON;
+BEGIN
+    -- Check admin user
+    SELECT * INTO v_admin_record 
+    FROM usuario 
+    WHERE email = 'admin@precisionseas.com';
+    
+    IF NOT FOUND THEN
+        RAISE EXCEPTION '❌ Usuario admin no encontrado';
+    END IF;
+    
+    IF v_admin_record.password IS NULL THEN
+        RAISE EXCEPTION '❌ Usuario admin no tiene contraseña';
+    END IF;
+    
+    RAISE NOTICE '✅ Usuario admin verificado:';
+    RAISE NOTICE '   - ID: %', v_admin_record.id_usuario;
+    RAISE NOTICE '   - Email: %', v_admin_record.email;
+    RAISE NOTICE '   - Nombre: % %', v_admin_record.nombre_usuario, v_admin_record.apellido_usuario;
+    RAISE NOTICE '   - Estado: %', v_admin_record.estado;
+    RAISE NOTICE '   - Tiene contraseña: %', CASE WHEN v_admin_record.password IS NOT NULL THEN 'SÍ' ELSE 'NO' END;
+    
+    -- Test authentication function
+    SELECT authenticate_user('admin@precisionseas.com', 'Admin123!') INTO v_auth_test;
+    
+    IF v_auth_test->>'success' != 'true' THEN
+        RAISE EXCEPTION '❌ Función authenticate_user falló: %', v_auth_test->>'message';
+    END IF;
+    
+    RAISE NOTICE '✅ Función authenticate_user funcionando correctamente';
+    
+    -- Test get_user_by_email function
+    SELECT get_user_by_email('admin@precisionseas.com') INTO v_auth_test;
+    
+    IF v_auth_test->>'success' != 'true' THEN
+        RAISE EXCEPTION '❌ Función get_user_by_email falló: %', v_auth_test->>'message';
+    END IF;
+    
+    RAISE NOTICE '✅ Función get_user_by_email funcionando correctamente';
+    
+    RAISE NOTICE '🎉 MIGRACIÓN COMPLETADA EXITOSAMENTE';
+    RAISE NOTICE '🎉 Sistema de autenticación listo para usar';
+    RAISE NOTICE '🎉 Credenciales: admin@precisionseas.com / Admin123!';
+    
+END $$;
