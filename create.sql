@@ -327,6 +327,7 @@ CREATE TABLE usuario (
     cargo VARCHAR(100),
     departamento VARCHAR(100),
     estado VARCHAR(20) DEFAULT 'Activo' CHECK (estado IN ('Activo', 'Inactivo', 'Suspendido')),
+    password VARCHAR(255),
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     observaciones TEXT
@@ -336,6 +337,7 @@ CREATE TABLE usuario (
 CREATE INDEX idx_usuario_email ON usuario(email);
 CREATE INDEX idx_usuario_estado ON usuario(estado);
 CREATE INDEX idx_usuario_departamento ON usuario(departamento);
+CREATE INDEX idx_usuario_email_login ON usuario(email);
 
 -- Crear trigger para actualizar fecha_actualizacion
 CREATE OR REPLACE FUNCTION update_usuario_timestamp()

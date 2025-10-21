@@ -45,12 +45,13 @@ INSERT INTO empresa (cod_empresa, nombre_empresa, direccion, telefono, email_fac
 -- =========================================
 -- 2) USUARIOS (Sin dependencias)
 -- =========================================
-INSERT INTO usuario (nombre_usuario, apellido_usuario, email, telefono, cargo, departamento, estado, observaciones) VALUES
-('Juan', 'Pérez', 'juan.perez@empresa.com', '+56 9 1234 5678', 'Ingeniero Mecánico', 'Producción', 'Activo', 'Especialista en soldadura y reparación naval'),
-('María', 'González', 'maria.gonzalez@empresa.com', '+56 9 2345 6789', 'Técnico de Calidad', 'Calidad', 'Activo', 'Responsable de control de calidad en proyectos'),
-('Carlos', 'Rodríguez', 'carlos.rodriguez@empresa.com', '+56 9 3456 7890', 'Operador CNC', 'Producción', 'Activo', 'Experto en mecanizado y fabricación'),
-('Ana', 'Martínez', 'ana.martinez@empresa.com', '+56 9 4567 8901', 'Diseñadora CAD', 'Ingeniería', 'Activo', 'Especialista en diseño técnico y planos'),
-('Luis', 'Hernández', 'luis.hernandez@empresa.com', '+56 9 5678 9012', 'Supervisor', 'Producción', 'Activo', 'Supervisor de proyectos y coordinación de equipos');
+INSERT INTO usuario (nombre_usuario, apellido_usuario, email, telefono, cargo, departamento, estado, password, observaciones) VALUES
+('Admin', 'Sistema', 'admin@precisionseas.com', '+56 9 0000 0000', 'Administrador', 'Sistemas', 'Activo', '$2b$12$oQpM2V0i0cAwxRw9nIdLEe9he12/QCKjVHr0SzO5RhZK2FHDMbpx2', 'Usuario administrador principal del sistema'),
+('Juan', 'Pérez', 'juan.perez@empresa.com', '+56 9 1234 5678', 'Ingeniero Mecánico', 'Producción', 'Activo', NULL, 'Especialista en soldadura y reparación naval'),
+('María', 'González', 'maria.gonzalez@empresa.com', '+56 9 2345 6789', 'Técnico de Calidad', 'Calidad', 'Activo', NULL, 'Responsable de control de calidad en proyectos'),
+('Carlos', 'Rodríguez', 'carlos.rodriguez@empresa.com', '+56 9 3456 7890', 'Operador CNC', 'Producción', 'Activo', NULL, 'Experto en mecanizado y fabricación'),
+('Ana', 'Martínez', 'ana.martinez@empresa.com', '+56 9 4567 8901', 'Diseñadora CAD', 'Ingeniería', 'Activo', NULL, 'Especialista en diseño técnico y planos'),
+('Luis', 'Hernández', 'luis.hernandez@empresa.com', '+56 9 5678 9012', 'Supervisor', 'Producción', 'Activo', NULL, 'Supervisor de proyectos y coordinación de equipos');
 
 -- =========================================
 -- 3) CONTACTOS (Depende de empresa)

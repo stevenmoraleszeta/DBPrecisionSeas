@@ -467,6 +467,78 @@ BEGIN
 END $$;
 
 -- =========================================
+-- 6.5) PRUEBAS DE AUTENTICACIÓN
+-- =========================================
+
+DO $$
+DECLARE
+  v_id_usuario INT;
+  v_auth_result JSON;
+  v_user_result JSON;
+  v_test_password VARCHAR(255) := 'Admin123!';
+  v_test_hash VARCHAR(255) := '$2b$12$oQpM2V0i0cAwxRw9nIdLEe9he12/QCKjVHr0SzO5RhZK2FHDMbpx2';
+BEGIN
+  RAISE NOTICE '🧪 Probando AUTENTICACIÓN...';
+  
+  -- Crear usuario de prueba con contraseña
+  SELECT sp_create_usuario(
+    'Usuario', 'Auth TEST', 'auth.test@empresa.com',
+    '+56 9 9999 9999', 'Tester', 'Testing', 'Activo',
+    'Usuario para pruebas de autenticación',
+    v_test_hash
+  ) INTO v_auth_result;
+  
+  IF v_auth_result->>'success' != 'true' THEN
+    RAISE EXCEPTION '❌ Fallo sp_create_usuario para auth: %', v_auth_result->>'message';
+  END IF;
+  
+  v_id_usuario := (v_auth_result->>'id_usuario')::INT;
+  RAISE NOTICE '✅ Usuario de auth creado con ID: %', v_id_usuario;
+  
+  -- Probar authenticate_user con credenciales correctas
+  SELECT authenticate_user('auth.test@empresa.com', v_test_password) INTO v_auth_result;
+  IF v_auth_result->>'success' != 'true' THEN
+    RAISE EXCEPTION '❌ Fallo authenticate_user con credenciales correctas: %', v_auth_result->>'message';
+  END IF;
+  RAISE NOTICE '✅ authenticate_user con credenciales correctas funcionando';
+  
+  -- Probar authenticate_user con email incorrecto
+  SELECT authenticate_user('email.incorrecto@empresa.com', v_test_password) INTO v_auth_result;
+  IF v_auth_result->>'success' != 'false' THEN
+    RAISE EXCEPTION '❌ Fallo authenticate_user con email incorrecto - debería fallar';
+  END IF;
+  RAISE NOTICE '✅ authenticate_user con email incorrecto funcionando correctamente';
+  
+  -- Probar get_user_by_email con email existente
+  SELECT get_user_by_email('auth.test@empresa.com') INTO v_user_result;
+  IF v_user_result->>'success' != 'true' THEN
+    RAISE EXCEPTION '❌ Fallo get_user_by_email con email existente: %', v_user_result->>'message';
+  END IF;
+  RAISE NOTICE '✅ get_user_by_email con email existente funcionando';
+  
+  -- Probar get_user_by_email con email inexistente
+  SELECT get_user_by_email('email.inexistente@empresa.com') INTO v_user_result;
+  IF v_user_result->>'success' != 'false' THEN
+    RAISE EXCEPTION '❌ Fallo get_user_by_email con email inexistente - debería fallar';
+  END IF;
+  RAISE NOTICE '✅ get_user_by_email con email inexistente funcionando correctamente';
+  
+  -- Probar authenticate_user con usuario inactivo
+  UPDATE usuario SET estado = 'Inactivo' WHERE id_usuario = v_id_usuario;
+  SELECT authenticate_user('auth.test@empresa.com', v_test_password) INTO v_auth_result;
+  IF v_auth_result->>'success' != 'false' THEN
+    RAISE EXCEPTION '❌ Fallo authenticate_user con usuario inactivo - debería fallar';
+  END IF;
+  RAISE NOTICE '✅ authenticate_user con usuario inactivo funcionando correctamente';
+  
+  -- Limpiar usuario de prueba
+  DELETE FROM usuario WHERE id_usuario = v_id_usuario;
+  RAISE NOTICE '✅ Usuario de prueba eliminado';
+  
+  RAISE NOTICE '🎉 Pruebas de AUTENTICACIÓN completadas exitosamente';
+END $$;
+
+-- =========================================
 -- 7) PRUEBAS DE OT (Orden de Trabajo)
 -- =========================================
 
@@ -866,5 +938,10 @@ BEGIN
   RAISE NOTICE '     • get_tiempo_por_colaborador, sp_completar_registro_tiempo';
   RAISE NOTICE '     • sp_delete_registro_tiempo';
   RAISE NOTICE '   🆕 Usuario (Colaboradores) - NUEVA SECCIÓN';
+  RAISE NOTICE '   🔐 Autenticación (Login/Password) - NUEVA SECCIÓN';
+  RAISE NOTICE '     • authenticate_user (verificación de credenciales)';
+  RAISE NOTICE '     • get_user_by_email (búsqueda por email)';
+  RAISE NOTICE '     • sp_create_usuario (con soporte para password)';
+  RAISE NOTICE '     • sp_update_usuario (con soporte para password)';
   RAISE NOTICE '';
 END $$;
