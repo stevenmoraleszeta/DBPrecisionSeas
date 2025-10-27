@@ -111,10 +111,8 @@ CREATE OR REPLACE FUNCTION sp_update_usuario(
 RETURNS JSON AS $$
 DECLARE
     v_response JSON;
-    v_update_fields TEXT[] := ARRAY[]::TEXT[];
-    v_update_values TEXT[] := ARRAY[]::TEXT[];
-    v_query TEXT;
-    v_counter INT := 1;
+    v_update_fields TEXT := '';
+    v_has_fields BOOLEAN := FALSE;
 BEGIN
     -- Verificar que el usuario existe
     IF NOT EXISTS (SELECT 1 FROM usuario WHERE id_usuario = p_id_usuario) THEN
@@ -144,64 +142,65 @@ BEGIN
     
     -- Construir query dinámicamente
     IF p_nombre_usuario IS NOT NULL THEN
-        v_update_fields := array_append(v_update_fields, 'nombre_usuario = $' || v_counter);
-        v_update_values := array_append(v_update_values, p_nombre_usuario);
-        v_counter := v_counter + 1;
+        IF v_update_fields != '' THEN v_update_fields := v_update_fields || ', '; END IF;
+        v_update_fields := v_update_fields || 'nombre_usuario = ' || quote_literal(p_nombre_usuario);
+        v_has_fields := TRUE;
     END IF;
     
     IF p_apellido_usuario IS NOT NULL THEN
-        v_update_fields := array_append(v_update_fields, 'apellido_usuario = $' || v_counter);
-        v_update_values := array_append(v_update_values, p_apellido_usuario);
-        v_counter := v_counter + 1;
+        IF v_update_fields != '' THEN v_update_fields := v_update_fields || ', '; END IF;
+        v_update_fields := v_update_fields || 'apellido_usuario = ' || quote_literal(p_apellido_usuario);
+        v_has_fields := TRUE;
     END IF;
     
     IF p_email IS NOT NULL THEN
-        v_update_fields := array_append(v_update_fields, 'email = $' || v_counter);
-        v_update_values := array_append(v_update_values, p_email);
-        v_counter := v_counter + 1;
+        IF v_update_fields != '' THEN v_update_fields := v_update_fields || ', '; END IF;
+        v_update_fields := v_update_fields || 'email = ' || quote_literal(p_email);
+        v_has_fields := TRUE;
     END IF;
     
     IF p_telefono IS NOT NULL THEN
-        v_update_fields := array_append(v_update_fields, 'telefono = $' || v_counter);
-        v_update_values := array_append(v_update_values, p_telefono);
-        v_counter := v_counter + 1;
+        IF v_update_fields != '' THEN v_update_fields := v_update_fields || ', '; END IF;
+        v_update_fields := v_update_fields || 'telefono = ' || quote_literal(p_telefono);
+        v_has_fields := TRUE;
     END IF;
     
     IF p_cargo IS NOT NULL THEN
-        v_update_fields := array_append(v_update_fields, 'cargo = $' || v_counter);
-        v_update_values := array_append(v_update_values, p_cargo);
-        v_counter := v_counter + 1;
+        IF v_update_fields != '' THEN v_update_fields := v_update_fields || ', '; END IF;
+        v_update_fields := v_update_fields || 'cargo = ' || quote_literal(p_cargo);
+        v_has_fields := TRUE;
     END IF;
     
     IF p_departamento IS NOT NULL THEN
-        v_update_fields := array_append(v_update_fields, 'departamento = $' || v_counter);
-        v_update_values := array_append(v_update_values, p_departamento);
-        v_counter := v_counter + 1;
+        IF v_update_fields != '' THEN v_update_fields := v_update_fields || ', '; END IF;
+        v_update_fields := v_update_fields || 'departamento = ' || quote_literal(p_departamento);
+        v_has_fields := TRUE;
     END IF;
     
     IF p_estado IS NOT NULL THEN
-        v_update_fields := array_append(v_update_fields, 'estado = $' || v_counter);
-        v_update_values := array_append(v_update_values, p_estado);
-        v_counter := v_counter + 1;
+        IF v_update_fields != '' THEN v_update_fields := v_update_fields || ', '; END IF;
+        v_update_fields := v_update_fields || 'estado = ' || quote_literal(p_estado);
+        v_has_fields := TRUE;
     END IF;
     
     IF p_observaciones IS NOT NULL THEN
-        v_update_fields := array_append(v_update_fields, 'observaciones = $' || v_counter);
-        v_update_values := array_append(v_update_values, p_observaciones);
-        v_counter := v_counter + 1;
+        IF v_update_fields != '' THEN v_update_fields := v_update_fields || ', '; END IF;
+        v_update_fields := v_update_fields || 'observaciones = ' || quote_literal(p_observaciones);
+        v_has_fields := TRUE;
     END IF;
     
     IF p_password IS NOT NULL THEN
-        v_update_fields := array_append(v_update_fields, 'password = $' || v_counter);
-        v_update_values := array_append(v_update_values, p_password);
-        v_counter := v_counter + 1;
+        IF v_update_fields != '' THEN v_update_fields := v_update_fields || ', '; END IF;
+        v_update_fields := v_update_fields || 'password = ' || quote_literal(p_password);
+        v_has_fields := TRUE;
     END IF;
     
     -- Agregar fecha_actualizacion
-    v_update_fields := array_append(v_update_fields, 'fecha_actualizacion = CURRENT_TIMESTAMP');
+    IF v_update_fields != '' THEN v_update_fields := v_update_fields || ', '; END IF;
+    v_update_fields := v_update_fields || 'fecha_actualizacion = CURRENT_TIMESTAMP';
     
     -- Si no hay campos para actualizar
-    IF array_length(v_update_fields, 1) IS NULL THEN
+    IF NOT v_has_fields THEN
         RETURN json_build_object(
             'success', false,
             'message', 'No se proporcionaron campos para actualizar'
@@ -209,10 +208,7 @@ BEGIN
     END IF;
     
     -- Construir y ejecutar query
-    v_query := 'UPDATE usuario SET ' || array_to_string(v_update_fields, ', ') || ' WHERE id_usuario = $' || v_counter;
-    v_update_values := array_append(v_update_values, p_id_usuario::TEXT);
-    
-    EXECUTE v_query USING v_update_values;
+    EXECUTE 'UPDATE usuario SET ' || v_update_fields || ' WHERE id_usuario = ' || p_id_usuario;
     
     RETURN json_build_object(
         'success', true,
