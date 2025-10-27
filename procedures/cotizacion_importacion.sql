@@ -1,4 +1,5 @@
--- UPSERT (calcula total de la línea = cantidad * precio)
+-- INSERT (calcula total de la línea = cantidad * precio)
+-- Allows duplicate entries - same import can be added multiple times to the same cotization
 CREATE OR REPLACE FUNCTION sp_add_cotizacion_importacion(
   p_id_cotizacion INT, p_id_importacion INT, p_cantidad INT, p_dimension VARCHAR, p_precio NUMERIC
 ) RETURNS VOID AS $$
@@ -7,12 +8,7 @@ BEGIN
   v_total := COALESCE(p_cantidad,0) * COALESCE(p_precio,0);
 
   INSERT INTO cotizacion_importacion (id_cotizacion, id_importacion, cantidad, dimension, precio, total)
-  VALUES (p_id_cotizacion, p_id_importacion, COALESCE(p_cantidad,0), p_dimension, COALESCE(p_precio,0), v_total)
-  ON CONFLICT (id_cotizacion, id_importacion) DO UPDATE
-  SET cantidad = EXCLUDED.cantidad,
-      dimension = EXCLUDED.dimension,
-      precio = EXCLUDED.precio,
-      total = EXCLUDED.total;
+  VALUES (p_id_cotizacion, p_id_importacion, COALESCE(p_cantidad,0), p_dimension, COALESCE(p_precio,0), v_total);
 END; $$ LANGUAGE plpgsql;
 
 -- DELETE (línea por ID único)

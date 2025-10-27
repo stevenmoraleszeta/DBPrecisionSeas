@@ -1,4 +1,5 @@
--- UPSERT (calcula total de la línea = tiempo * tarifa)
+-- INSERT (calcula total de la línea = tiempo * tarifa)
+-- Allows duplicate entries - same process can be added multiple times to the same cotization
 CREATE OR REPLACE FUNCTION sp_add_cotizacion_proceso(
   p_id_cotizacion INT, p_id_proceso INT, p_tiempo INT
 ) RETURNS VOID AS $$
@@ -8,10 +9,7 @@ BEGIN
   FROM proceso_maquina WHERE id_proceso = p_id_proceso;
 
   INSERT INTO cotizacion_proceso (id_cotizacion, id_proceso, tiempo, total)
-  VALUES (p_id_cotizacion, p_id_proceso, COALESCE(p_tiempo,0), v_total)
-  ON CONFLICT (id_cotizacion, id_proceso) DO UPDATE
-  SET tiempo = EXCLUDED.tiempo,
-      total = EXCLUDED.total;
+  VALUES (p_id_cotizacion, p_id_proceso, COALESCE(p_tiempo,0), v_total);
 END; $$ LANGUAGE plpgsql;
 
 -- DELETE (línea por ID único)

@@ -149,6 +149,7 @@ CREATE TABLE proceso_maquina (
 
 -- COTIZACION <-> MATERIAL
 -- ✅ ESTRUCTURA CORREGIDA: Campo 'id' único para operaciones CRUD
+-- ✅ Permite duplicados: el mismo material puede aparecer múltiples veces en la misma cotización
 CREATE TABLE cotizacion_material (
     id SERIAL PRIMARY KEY,  -- ✅ Campo ID único para APIs REST
     id_cotizacion   INT NOT NULL,
@@ -157,8 +158,6 @@ CREATE TABLE cotizacion_material (
     dimension       VARCHAR(100),
     precio          NUMERIC(12,2) DEFAULT 0,
     total           NUMERIC(12,2) DEFAULT 0,
-
-    CONSTRAINT uk_cot_mat UNIQUE (id_cotizacion, id_material),  -- ✅ Índice único para prevenir duplicados
 
     CONSTRAINT fk_cm_cotizacion
         FOREIGN KEY (id_cotizacion)
@@ -178,6 +177,7 @@ CREATE INDEX idx_cotizacion_material_material
 
 -- COTIZACION <-> IMPORTACION
 -- ✅ ESTRUCTURA CORREGIDA: Campo 'id' único para operaciones CRUD
+-- ✅ Permite duplicados: la misma importación puede aparecer múltiples veces en la misma cotización
 CREATE TABLE cotizacion_importacion (
     id SERIAL PRIMARY KEY,  -- ✅ Campo ID único para APIs REST
     id_cotizacion   INT NOT NULL,
@@ -186,8 +186,6 @@ CREATE TABLE cotizacion_importacion (
     dimension       VARCHAR(100),
     precio          NUMERIC(12,2) DEFAULT 0,
     total           NUMERIC(12,2) DEFAULT 0,
-
-    CONSTRAINT uk_cot_imp UNIQUE (id_cotizacion, id_importacion),  -- ✅ Índice único para prevenir duplicados
 
     CONSTRAINT fk_ci_cotizacion
         FOREIGN KEY (id_cotizacion)
@@ -207,14 +205,13 @@ CREATE INDEX idx_cotizacion_importacion_importacion
 
 -- COTIZACION <-> PROCESO/MAQUINA
 -- ✅ ESTRUCTURA CORREGIDA: Campo 'id' único para operaciones CRUD
+-- ✅ Permite duplicados: el mismo proceso puede aparecer múltiples veces en la misma cotización
 CREATE TABLE cotizacion_proceso (
     id SERIAL PRIMARY KEY,  -- ✅ Campo ID único para APIs REST
     id_cotizacion   INT NOT NULL,
     id_proceso      INT NOT NULL,
     tiempo          INT DEFAULT 0,
     total           NUMERIC(12,2) DEFAULT 0,
-
-    CONSTRAINT uk_cot_proceso UNIQUE (id_cotizacion, id_proceso),  -- ✅ Índice único para prevenir duplicados
 
     CONSTRAINT fk_cp_cotizacion
         FOREIGN KEY (id_cotizacion)
@@ -237,6 +234,7 @@ CREATE INDEX idx_cotizacion_proceso_proceso
 -- =========================================
 
 -- OT <-> MATERIAL
+-- Permite duplicados: el mismo material puede aparecer múltiples veces en la misma OT
 CREATE TABLE ot_material (
     id SERIAL PRIMARY KEY,
     id_ot           INT NOT NULL,
@@ -245,8 +243,6 @@ CREATE TABLE ot_material (
     dimension       VARCHAR(100),
     precio          NUMERIC(12,2) DEFAULT 0,
     total           NUMERIC(12,2) DEFAULT 0,
-
-    CONSTRAINT uk_ot_mat UNIQUE (id_ot, id_material),
 
     CONSTRAINT fk_otm_ot
         FOREIGN KEY (id_ot)
@@ -264,6 +260,7 @@ CREATE TABLE ot_material (
 CREATE INDEX idx_ot_material_material ON ot_material (id_material);
 
 -- OT <-> IMPORTACION
+-- Permite duplicados: la misma importación puede aparecer múltiples veces en la misma OT
 CREATE TABLE ot_importacion (
     id SERIAL PRIMARY KEY,
     id_ot           INT NOT NULL,
@@ -272,8 +269,6 @@ CREATE TABLE ot_importacion (
     dimension       VARCHAR(100),
     precio          NUMERIC(12,2) DEFAULT 0,
     total           NUMERIC(12,2) DEFAULT 0,
-
-    CONSTRAINT uk_ot_imp UNIQUE (id_ot, id_importacion),
 
     CONSTRAINT fk_oti_ot
         FOREIGN KEY (id_ot)
@@ -291,14 +286,13 @@ CREATE TABLE ot_importacion (
 CREATE INDEX idx_ot_importacion_importacion ON ot_importacion (id_importacion);
 
 -- OT <-> PROCESO/MAQUINA
+-- Permite duplicados: el mismo proceso puede aparecer múltiples veces en la misma OT
 CREATE TABLE ot_proceso (
     id SERIAL PRIMARY KEY,
     id_ot           INT NOT NULL,
     id_proceso      INT NOT NULL,
     tiempo          INT DEFAULT 0,
     total           NUMERIC(12,2) DEFAULT 0,
-
-    CONSTRAINT uk_ot_proceso UNIQUE (id_ot, id_proceso),
 
     CONSTRAINT fk_otp_ot
         FOREIGN KEY (id_ot)
