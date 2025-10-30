@@ -26,7 +26,7 @@ BEGIN
             departamento = 'Sistemas',
             estado = 'Activo',
             password = '$2b$12$9gxm/hfdjTWZgdv6i0y/ueU1jERhT2GgLXY1RmYh/C504OYS6YbBO',
-            observaciones = 'Usuario administrador principal del sistema Precision Seas ERP',
+            observaciones = 'Usuario administrador principal del sistema Precisión Seas ERP',
             fecha_actualizacion = CURRENT_TIMESTAMP
         WHERE email = 'admin@precisionseas.com'
         RETURNING id_usuario INTO v_admin_id;
@@ -53,7 +53,7 @@ BEGIN
             'Sistemas', 
             'Activo', 
             '$2b$12$9gxm/hfdjTWZgdv6i0y/ueU1jERhT2GgLXY1RmYh/C504OYS6YbBO',
-            'Usuario administrador principal del sistema Precision Seas ERP'
+            'Usuario administrador principal del sistema Precisión Seas ERP'
         ) RETURNING id_usuario INTO v_admin_id;
         
         RAISE NOTICE '✅ Usuario admin creado exitosamente (ID: %)', v_admin_id;

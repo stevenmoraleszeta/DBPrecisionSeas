@@ -3,7 +3,7 @@
 -- =========================================
 -- Este script migra la tabla plano_solido a la nueva tabla archivo
 -- Elimina dependencias de Cloudinary y simplifica la estructura
--- Fecha: 2024-01-09
+-- Fecha: 2025-01-09
 -- Versión: 1.0.0
 
 -- =========================================

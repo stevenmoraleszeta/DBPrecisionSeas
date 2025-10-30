@@ -409,7 +409,7 @@ BEGIN
             cargo = 'Administrador',
             departamento = 'Sistemas',
             estado = 'Activo',
-            observaciones = 'Usuario administrador principal del sistema Precision Seas ERP'
+            observaciones = 'Usuario administrador principal del sistema Precisión Seas ERP'
         WHERE email = 'admin@precisionseas.com';
         
         RAISE NOTICE '✅ Usuario admin actualizado con contraseña';
@@ -434,7 +434,7 @@ BEGIN
             'Sistemas', 
             'Activo', 
             '$2b$12$oQpM2V0i0cAwxRw9nIdLEe9he12/QCKjVHr0SzO5RhZK2FHDMbpx2',
-            'Usuario administrador principal del sistema Precision Seas ERP'
+            'Usuario administrador principal del sistema Precisión Seas ERP'
         );
         
         RAISE NOTICE '✅ Usuario admin creado con contraseña';

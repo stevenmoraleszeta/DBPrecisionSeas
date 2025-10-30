@@ -563,7 +563,7 @@ BEGIN
   SELECT sp_create_ot(
     'OT-TEST-001', v_id_cotizacion, 'PO-TEST-001', v_id_empresa, v_id_contacto,
     'OT de prueba para validar funcionalidad', 1, 'Pendiente',
-    '2024-01-15', '2024-02-15', 'Alta', 'OT de prueba'
+    '2025-01-15', '2025-02-15', 'Alta', 'OT de prueba'
   ) INTO v_id_ot;
   
   IF v_id_ot IS NULL OR v_id_ot <= 0 THEN
@@ -589,7 +589,7 @@ BEGIN
   PERFORM sp_update_ot_info(
     v_id_ot, v_id_cotizacion, 'PO-TEST-001-UPDATED', v_id_empresa, v_id_contacto,
     'OT de prueba actualizada', 2, 'En Progreso',
-    '2024-01-20', '2024-02-20', 'Media', 'OT de prueba actualizada'
+    '2025-01-20', '2025-02-20', 'Media', 'OT de prueba actualizada'
   );
   SELECT * INTO v_ot FROM get_ot(v_id_ot);
   IF v_ot.cantidad != 2 THEN
@@ -704,9 +704,9 @@ BEGIN
   
   -- OT Registro Tiempo
   SELECT sp_create_registro_tiempo(
-    v_id_usuario, '2024-01-15 08:00:00', '2024-01-15 12:00:00', 
+    v_id_usuario, '2025-01-15 08:00:00', '2025-01-15 12:00:00', 
     240, 'Trabajo de prueba', 'Completado',
-    v_id_ot, '2024-01-15 08:30:00', '2024-01-15 12:30:00'
+    v_id_ot, '2025-01-15 08:30:00', '2025-01-15 12:30:00'
   ) INTO v_id_tiempo;
   
   IF v_id_tiempo IS NULL OR v_id_tiempo <= 0 THEN
@@ -736,9 +736,9 @@ BEGIN
   
   -- UPDATE registro
   PERFORM sp_update_registro_tiempo(
-    v_id_tiempo, '2024-01-15 09:00:00', '2024-01-15 13:00:00',
+    v_id_tiempo, '2025-01-15 09:00:00', '2025-01-15 13:00:00',
     300, 'Trabajo de prueba actualizado', 'Completado',
-    '2024-01-15 09:30:00', '2024-01-15 13:30:00'
+    '2025-01-15 09:30:00', '2025-01-15 13:30:00'
   );
   RAISE NOTICE '✅ Actualización de registro funcionando';
   
@@ -774,12 +774,12 @@ BEGIN
   
   -- COMPLETAR REGISTRO (crear uno nuevo para probar)
   SELECT sp_create_registro_tiempo(
-    v_id_usuario, '2024-01-15 14:00:00', NULL, 
+    v_id_usuario, '2025-01-15 14:00:00', NULL, 
     0, 'Trabajo en progreso', 'En Progreso',
-    v_id_ot, '2024-01-15 14:30:00', '2024-01-15 18:30:00'
+    v_id_ot, '2025-01-15 14:30:00', '2025-01-15 18:30:00'
   ) INTO v_id_tiempo;
   
-  PERFORM sp_completar_registro_tiempo(v_id_tiempo, '2024-01-15 18:00:00', 240);
+  PERFORM sp_completar_registro_tiempo(v_id_tiempo, '2025-01-15 18:00:00', 240);
   RAISE NOTICE '✅ Completar registro funcionando';
   
   RAISE NOTICE '🎉 Pruebas de ARCHIVOS Y TIEMPO DE OT completadas exitosamente';
