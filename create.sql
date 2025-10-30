@@ -135,6 +135,56 @@ CREATE TABLE importacion (
 );
 
 -- =========================================
+-- IMPORTACION_PROVEEDOR (N:M Importacion ↔ Contacto)
+-- =========================================
+CREATE TABLE importacion_proveedor (
+    id SERIAL PRIMARY KEY,
+    id_importacion INT NOT NULL,
+    id_contacto INT NOT NULL,
+    notas TEXT,
+
+    CONSTRAINT fk_ip_importacion
+      FOREIGN KEY (id_importacion)
+      REFERENCES importacion(id_importacion)
+      ON UPDATE CASCADE
+      ON DELETE CASCADE,
+
+    CONSTRAINT fk_ip_contacto
+      FOREIGN KEY (id_contacto)
+      REFERENCES contacto(id_contacto)
+      ON UPDATE CASCADE
+      ON DELETE RESTRICT
+);
+
+CREATE INDEX idx_ip_id_importacion ON importacion_proveedor (id_importacion);
+CREATE INDEX idx_ip_id_contacto ON importacion_proveedor (id_contacto);
+
+-- =========================================
+-- MATERIAL_PROVEEDOR (N:M Material ↔ Contacto)
+-- =========================================
+CREATE TABLE material_proveedor (
+    id SERIAL PRIMARY KEY,
+    id_material INT NOT NULL,
+    id_contacto INT NOT NULL,
+    notas TEXT,
+
+    CONSTRAINT fk_mp_material
+      FOREIGN KEY (id_material)
+      REFERENCES material(id_material)
+      ON UPDATE CASCADE
+      ON DELETE CASCADE,
+
+    CONSTRAINT fk_mp_contacto
+      FOREIGN KEY (id_contacto)
+      REFERENCES contacto(id_contacto)
+      ON UPDATE CASCADE
+      ON DELETE RESTRICT
+);
+
+CREATE INDEX idx_mp_id_material ON material_proveedor (id_material);
+CREATE INDEX idx_mp_id_contacto ON material_proveedor (id_contacto);
+
+-- =========================================
 -- PROCESO/MAQUINA
 -- =========================================
 CREATE TABLE proceso_maquina (
